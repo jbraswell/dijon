@@ -9,4 +9,5 @@ def test_echo(ctx):
     response = ctx.client.post("/echo", json={"message": "hello"})
     assert response.status_code == 201
     data = response.json()
+    assert data["id"] == 1
     assert data["message"] == "hello"

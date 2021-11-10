@@ -10,5 +10,7 @@ class EchoRequest(Echo):
 
 
 class EchoResponse(Echo):
+    id: int
+
     class Config:
         orm_mode = True
