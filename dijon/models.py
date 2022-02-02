@@ -1,7 +1,26 @@
+import enum
+
 from sqlalchemy import DECIMAL, Boolean, Column, DateTime, Enum, ForeignKey, Integer, Interval, String, Text, Time, func
 from sqlalchemy.orm import relationship
 
 from dijon.database import Base
+
+
+class VenueTypeEnum(enum.IntEnum):
+    NONE = 0
+    IN_PERSON = 1
+    VIRTUAL = 2
+    HYBRID = 3
+
+
+class DayOfWeekEnum(enum.IntEnum):
+    SUNDAY = 1
+    MONDAY = 2
+    TUESDAY = 3
+    WEDNESDAY = 4
+    THURSDAY = 5
+    FRIDAY = 6
+    SATURDAY = 7
 
 
 class Echo(Base):
@@ -20,23 +39,23 @@ class ServiceBodyNawsCode(Base):
     __tablename__ = "service_body_naws_codes"
 
     id = Column(Integer, primary_key=True, index=True)
-    root_server_id = Column(ForeignKey("root_servers.id"))
+    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
-    source_id = Column(Integer)
+    source_id = Column(Integer, nullable=False)
 
 
 class ServiceBody(Base):
     __tablename__ = "service_bodies"
 
     id = Column(Integer, primary_key=True, index=True)
-    import_id = Column(ForeignKey("imports.id"))
+    import_id = Column(ForeignKey("imports.id"), nullable=False)
     import_ = relationship("Import", uselist=False)
     source_id = Column(Integer)
 
     parent_id = Column(ForeignKey("service_bodies.id"), nullable=True)
     parent = relationship("ServiceBody", remote_side=[id])
-    name = Column(String(255))
-    type = Column(String(20))
+    name = Column(String(255), nullable=False)
+    type = Column(String(20), nullable=False)
     description = Column(Text, nullable=True)
     url = Column(String(255), nullable=True)
     helpline = Column(String(255), nullable=True)
@@ -54,12 +73,12 @@ class Format(Base):
     __tablename__ = "formats"
 
     id = Column(Integer, primary_key=True, index=True)
-    import_id = Column(ForeignKey("imports.id"))
+    import_id = Column(ForeignKey("imports.id"), nullable=False)
     import_ = relationship("Import", uselist=False)
-    source_id = Column(Integer)
+    source_id = Column(Integer, nullable=False)
 
-    name = Column(String(255))
-    key_string = Column(String(255))
+    name = Column(String(255), nullable=False)
+    key_string = Column(String(255), nullable=False)
     naws_format_code = Column(String(20), nullable=True)
     meetings = relationship("Meeting", secondary="MeetingFormat", backref="Format")
 
@@ -72,8 +91,8 @@ class MeetingFormat(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    meeting_id = Column(ForeignKey("meetings.id"))
-    format_id = Column(ForeignKey("formats.id"))
+    meeting_id = Column(ForeignKey("meetings.id"), nullable=False)
+    format_id = Column(ForeignKey("formats.id"), nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -84,9 +103,9 @@ class MeetingNawsCode(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    root_server_id = Column(ForeignKey("root_servers.id"))
+    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
-    source_id = Column(Integer)
+    source_id = Column(Integer, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -96,23 +115,23 @@ class Meeting(Base):
     __tablename__ = "meetings"
 
     id = Column(Integer, primary_key=True, index=True)
-    import_id = Column(ForeignKey("imports.id"))
+    import_id = Column(ForeignKey("imports.id"), nullable=False)
     import_ = relationship("Import", uselist=False)
-    source_id = Column(Integer)
+    source_id = Column(Integer, nullable=False)
 
-    name = Column(String(255))
-    day = Column(Enum('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
-    service_body_id = Column(ForeignKey("service_bodies.id"))
+    name = Column(String(255), nullable=False)
+    day = Column(Enum(DayOfWeekEnum), nullable=False)
+    service_body_id = Column(ForeignKey("service_bodies.id"), nullable=False)
     service_body = relationship("ServiceBody", back_populates="meetings", uselist=False)
-    venue_type = Column(Enum('inperson', 'virtual', 'hybrid'), nullable=True)
-    start_time = Column(Time)
-    duration = Column(Interval)
+    venue_type = Column(Enum(VenueTypeEnum), nullable=False)
+    start_time = Column(Time, nullable=False)
+    duration = Column(Interval, nullable=False)
     time_zone = Column(String(255), nullable=True)
     formats = relationship("Format", secondary="MeetingFormat", backref="Meeting")
     language = Column(String(255), nullable=True)
     latitude = Column(DECIMAL(precision=15, scale=12, asdecimal=True))
     longitude = Column(DECIMAL(precision=15, scale=12, asdecimal=True))
-    published = Column(Boolean)
+    published = Column(Boolean, nullable=False)
     world_id = Column(String(20), nullable=True)
 
     meeting_naws_code_id = Column(ForeignKey("meeting_naws_codes.id"), nullable=True)
@@ -144,8 +163,8 @@ class RootServer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String(255))
-    url = Column(String(255))
+    name = Column(String(255), nullable=False)
+    url = Column(String(255), nullable=False)
     imports = relationship("Import", back_populates="root_server")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -157,7 +176,7 @@ class Import(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    root_server_id = Column(ForeignKey("root_servers.id"))
+    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
     root_server = relationship("RootServer", back_populates="imports", uselist=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
