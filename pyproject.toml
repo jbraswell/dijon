@@ -17,6 +17,7 @@ uvicorn = "^0.15.0"
 click = "^8.0.3"
 dynaconf = "^3.1.7"
 mysql-connector-python = "^8.0.27"
+requests = "^2.27.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -27,7 +28,8 @@ SQLAlchemy-Utils = "^0.37.9"
 
 [tool.isort]
 lines_after_imports = 2
-line_length = 120
+line_length = 100
+skip_glob = ["dijon/alembic/*"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
