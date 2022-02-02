@@ -62,11 +62,20 @@ class ServiceBody(Base):
     world_id = Column(String(20), nullable=True)
 
     service_body_naws_code_id = Column(ForeignKey("service_body_naws_codes.id"), nullable=True)
-    committee_code = relationship("ServiceBodyNawsCode", uselist=False)
+    naws_code = relationship("ServiceBodyNawsCode", uselist=False)
     meetings = relationship("Meeting", back_populates="service_body")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class FormatNawsCode(Base):
+    __tablename__ = "format_naws_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
+    root_server = relationship("RootServer", uselist=False)
+    source_id = Column(Integer, nullable=False)
 
 
 class Format(Base):
@@ -79,7 +88,9 @@ class Format(Base):
 
     name = Column(String(255), nullable=False)
     key_string = Column(String(255), nullable=False)
-    naws_format_code = Column(String(20), nullable=True)
+    world_id = Column(String(20), nullable=True)
+    format_naws_code_id = Column(ForeignKey("format_naws_codes.id"), nullable=True)
+    naws_code = relationship("FormatNawsCode", uselist=False)
     meetings = relationship("Meeting", secondary="MeetingFormat", backref="Format")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -135,7 +146,7 @@ class Meeting(Base):
     world_id = Column(String(20), nullable=True)
 
     meeting_naws_code_id = Column(ForeignKey("meeting_naws_codes.id"), nullable=True)
-    committee_code = relationship("MeetingNawsCode", uselist=False)
+    naws_code = relationship("MeetingNawsCode", uselist=False)
 
     location_text = Column(Text, nullable=True)
     location_info = Column(Text, nullable=True)
