@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 07d676f0aed7
+Revision ID: 8d242de9b7e5
 Revises: 2e5309fed3ad
-Create Date: 2022-02-02 15:12:05.794178
+Create Date: 2022-02-02 15:18:09.506818
 
 """
 import sqlalchemy as sa
@@ -10,7 +10,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision = '07d676f0aed7'
+revision = '8d242de9b7e5'
 down_revision = '2e5309fed3ad'
 branch_labels = None
 depends_on = None
@@ -27,6 +27,14 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_root_servers_id'), 'root_servers', ['id'], unique=False)
+    op.create_table('format_naws_codes',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('root_server_id', sa.Integer(), nullable=False),
+    sa.Column('source_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['root_server_id'], ['root_servers.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_format_naws_codes_id'), 'format_naws_codes', ['id'], unique=False)
     op.create_table('imports',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('root_server_id', sa.Integer(), nullable=False),
@@ -60,9 +68,11 @@ def upgrade():
     sa.Column('source_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
     sa.Column('key_string', sa.String(length=255), nullable=False),
-    sa.Column('naws_format_code', sa.String(length=20), nullable=True),
+    sa.Column('world_id', sa.String(length=20), nullable=True),
+    sa.Column('format_naws_code_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.ForeignKeyConstraint(['format_naws_code_id'], ['format_naws_codes.id'], ),
     sa.ForeignKeyConstraint(['import_id'], ['imports.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -92,7 +102,7 @@ def upgrade():
     sa.Column('import_id', sa.Integer(), nullable=False),
     sa.Column('source_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('day', sa.Enum('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY', name='dayofweekenum'), nullable=False),
+    sa.Column('day', sa.Enum('SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', name='dayofweekenum'), nullable=False),
     sa.Column('service_body_id', sa.Integer(), nullable=False),
     sa.Column('venue_type', sa.Enum('NONE', 'IN_PERSON', 'VIRTUAL', 'HYBRID', name='venuetypeenum'), nullable=False),
     sa.Column('start_time', sa.Time(), nullable=False),
@@ -158,6 +168,8 @@ def downgrade():
     op.drop_table('meeting_naws_codes')
     op.drop_index(op.f('ix_imports_id'), table_name='imports')
     op.drop_table('imports')
+    op.drop_index(op.f('ix_format_naws_codes_id'), table_name='format_naws_codes')
+    op.drop_table('format_naws_codes')
     op.drop_index(op.f('ix_root_servers_id'), table_name='root_servers')
     op.drop_table('root_servers')
     # ### end Alembic commands ###
