@@ -1,4 +1,4 @@
-from sqlalchemy import DECIMAL, Boolean, Column, DateTime, ForeignKey, Integer, Interval, String, Text, Time, func
+from sqlalchemy import DECIMAL, Boolean, Column, DateTime, Enum, ForeignKey, Integer, Interval, String, Text, Time, func
 from sqlalchemy.orm import relationship
 
 from dijon.database import Base
@@ -101,10 +101,10 @@ class Meeting(Base):
     source_id = Column(Integer)
 
     name = Column(String(255))
-    weekday = Column(Integer)
+    day = Column(Enum('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
     service_body_id = Column(ForeignKey("service_bodies.id"))
     service_body = relationship("ServiceBody", back_populates="meetings", uselist=False)
-    venue_type = Column(Integer, nullable=True)
+    venue_type = Column(Enum('inperson', 'virtual', 'hybrid'), nullable=True)
     start_time = Column(Time)
     duration = Column(Interval)
     time_zone = Column(String(255), nullable=True)
