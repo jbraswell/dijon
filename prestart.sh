@@ -1,3 +1,6 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
-dijon run-migrations
+while ! dijon run-migrations
+do
+    sleep 5
+done

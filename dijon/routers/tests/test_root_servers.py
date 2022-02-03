@@ -50,3 +50,12 @@ def test_create_root_server(ctx: Ctx):
     assert isinstance(data["id"], int)
     assert data["name"] == "SEZF"
     assert data["url"] == "https://reallygoodurl/main_server/"
+
+
+def test_delete_root_server(ctx: Ctx):
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+
+    response = ctx.client.delete(f"/rootservers/{rs_1.id}")
+    assert response.status_code == 204
+    response = ctx.client.delete(f"/rootservers/{rs_1.id}")
+    assert response.status_code == 404
