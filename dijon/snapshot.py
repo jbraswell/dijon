@@ -1,3 +1,4 @@
+import logging
 from datetime import time, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, Optional
@@ -9,6 +10,47 @@ from pydantic.validators import str_validator
 from sqlalchemy.orm import Session
 
 from dijon import crud, models
+
+
+logger = logging.getLogger(__name__)
+
+
+class SnapshotCache:
+    def __init__(self, db: Session, snapshot: models.Snapshot):
+        self._db = db
+        self._snapshot = snapshot
+        self._service_bodies: Optional[dict[int, models.ServiceBody]] = None
+        self._meeting_naws_codes: Optional[dict[int, models.MeetingNawsCode]] = None
+
+    @property
+    def snapshot(self) -> models.Snapshot:
+        return self._snapshot
+
+    @property
+    def service_bodies(self) -> dict[int, models.ServiceBody]:
+        if self._service_bodies is None:
+            db_sbs = crud.get_service_bodies_by_snapshot(self._db, self._snapshot.id)
+            db_sb_dict = {db_sb.bmlt_id: db_sb for db_sb in db_sbs}
+            self._service_bodies = db_sb_dict
+        return self._service_bodies
+
+    @property
+    def meeting_naws_codes(self) -> dict[int, models.MeetingNawsCode]:
+        if self._meeting_naws_codes is None:
+            db_naws_codes = crud.get_meeting_naws_codes_by_server(self._db, self._snapshot.root_server_id)
+            db_naws_codes_dict = {db_naws_code.bmlt_id: db_naws_code for db_naws_code in db_naws_codes}
+            self._meeting_naws_codes = db_naws_codes_dict
+        return self._meeting_naws_codes
+
+    def get_service_body(self, bmlt_id: int) -> Optional[models.ServiceBody]:
+        return self.service_bodies.get(bmlt_id)
+
+    def get_meeting_naws_code(self, bmlt_id: int) -> Optional[models.MeetingNawsCode]:
+        return self.meeting_naws_codes.get(bmlt_id)
+
+    def clear(self):
+        self._service_bodies = None
+        self._meeting_naws_codes = None
 
 
 class EmptyToNoneStr(str):
@@ -32,7 +74,7 @@ class BmltServiceBody(BaseModel):
     @classmethod
     def from_url(cls, url: str) -> list["BmltServiceBody"]:
         service_bodies = []
-        url = urljoin(url + "/", "client_interface/json/?switcher=GetServiceBodies")
+        url = urljoin(url, "client_interface/json/?switcher=GetServiceBodies")
         for raw in get_json(url):
             try:
                 obj = cls(**raw)
@@ -68,7 +110,7 @@ class BmltFormat(BaseModel):
     @classmethod
     def from_url(cls, url: str) -> list["BmltFormat"]:
         formats = []
-        url = urljoin(url + "/", "client_interface/json/?switcher=GetFormats")
+        url = urljoin(url, "client_interface/json/?switcher=GetFormats")
         for raw in get_json(url):
             try:
                 obj = cls(**raw)
@@ -125,7 +167,7 @@ class BmltMeeting(BaseModel):
     @classmethod
     def from_url(cls, url: str) -> list["BmltMeeting"]:
         meetings = []
-        url = urljoin(url + "/", "?switcher=GetSearchResults&advanced_published=0")
+        url = urljoin(url, "client_interface/json/?switcher=GetSearchResults&advanced_published=0")
         for raw in get_json(url):
             try:
                 obj = cls(**raw)
@@ -136,14 +178,14 @@ class BmltMeeting(BaseModel):
                 meetings.append(obj)
         return meetings
 
-    def to_db(self, db: Session, snapshot: models.Snapshot) -> tuple[models.Meeting, list[models.MeetingFormat]]:
-        naws_code = crud.get_meeting_naws_code_by_server(db, snapshot.root_server_id, self.id_bigint)
-        service_body = crud.get_service_body_by_snapshot(db, snapshot.id, self.service_body_bigint)
+    def to_db(self, db: Session, cache: SnapshotCache) -> tuple[models.Meeting, list[models.MeetingFormat]]:
+        naws_code = cache.get_meeting_naws_code(self.id_bigint)
+        service_body = cache.get_service_body(self.service_body_bigint)
         if not service_body:
             raise ValueError("invalid service body")
 
         db_meeting = models.Meeting(
-            snapshot_id=snapshot.id,
+            snapshot_id=cache.snapshot.id,
             bmlt_id=self.id_bigint,
             name=self.meeting_name,
             day=models.DayOfWeekEnum(self.weekday_tinyint),
@@ -175,7 +217,7 @@ class BmltMeeting(BaseModel):
             virtual_meeting_additional_info=self.virtual_meeting_additional_info
         )
 
-        db_formats = crud.get_formats_by_snapshot(db, snapshot.id, self.format_shared_id_list)
+        db_formats = crud.get_formats_by_bmlt_ids(db, cache.snapshot.id, self.format_shared_id_list)
         db_meeting_formats = [models.MeetingFormat(meeting=db_meeting, format=db_format) for db_format in db_formats]
         return db_meeting, db_meeting_formats
 
@@ -228,12 +270,22 @@ def get_json(url: str) -> list[Any]:
 
 
 def create_snapshot(db: Session, root_server: models.RootServer):
+    logger.info(f"creating snapshot for {root_server.id}:{root_server.url}...")
     snapshot = crud.create_snapshot(db, root_server)
+
+    logger.info("getting service bodies...")
     bmlt_service_bodies = BmltServiceBody.from_url(root_server.url)
+    logger.info(f"saving {len(bmlt_service_bodies)} service bodies...")
     save_service_bodies(db, snapshot, bmlt_service_bodies)
+
+    logger.info("getting formats...")
     bmlt_formats = BmltFormat.from_url(root_server.url)
+    logger.info(f"saving {len(bmlt_formats)} formats...")
     save_formats(db, snapshot, bmlt_formats)
+
+    logger.info("getting meetings...")
     bmlt_meetings = BmltMeeting.from_url(root_server.url)
+    logger.info(f"saving {len(bmlt_meetings)} meetings...")
     save_meetings(db, snapshot, bmlt_meetings)
 
 
@@ -265,8 +317,9 @@ def save_formats(db: Session, snapshot: models.Snapshot, bmlt_formats: list[Bmlt
 
 
 def save_meetings(db: Session, snapshot: models.Snapshot, bmlt_meetings: list[BmltMeeting]):
+    cache = SnapshotCache(db, snapshot)
     for bmlt_meeting in bmlt_meetings:
-        db_meeting, db_meeting_formats = bmlt_meeting.to_db(db, snapshot)
+        db_meeting, db_meeting_formats = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.add_all(db_meeting_formats)
     db.flush()

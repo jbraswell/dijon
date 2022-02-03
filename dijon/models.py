@@ -36,18 +36,6 @@ class DayOfWeekEnum(enum.IntEnum):
     SATURDAY = 7
 
 
-class Echo(Base):
-    __tablename__ = "echoes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    message = Column(String(255))
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    def __unicode__(self):
-        return self.username
-
-
 class ServiceBodyNawsCode(Base):
     __tablename__ = "service_body_naws_codes"
 

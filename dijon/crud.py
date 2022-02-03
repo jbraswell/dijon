@@ -3,28 +3,14 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from dijon.models import (
-    Echo,
     Format,
     FormatNawsCode,
-    Meeting,
     MeetingNawsCode,
     RootServer,
     ServiceBody,
     ServiceBodyNawsCode,
     Snapshot,
 )
-
-
-class DoesNotExist(Exception):
-    pass
-
-
-def create_echo(db: Session, message: str) -> Echo:
-    echo = Echo(message=message)
-    db.add(echo)
-    db.flush()
-    db.refresh(echo)
-    return echo
 
 
 def create_snapshot(db: Session, root_server: RootServer) -> Snapshot:
@@ -94,23 +80,11 @@ def get_root_servers(db: Session) -> list[RootServer]:
     return db.query(RootServer).all()
 
 
-def get_meeting_by_snapshot(db: Session, snapshot_id: int, bmlt_id: int) -> Optional[Meeting]:
-    return (
-        db.query(Meeting)
-          .filter(Meeting.snapshot_id == snapshot_id, Meeting.bmlt_id == bmlt_id)
-          .first()
-    )
+def get_service_bodies_by_snapshot(db: Session, snapshot_id: int) -> list[ServiceBody]:
+    return db.query(ServiceBody).filter(snapshot_id == snapshot_id).all()
 
 
-def get_service_body_by_snapshot(db: Session, snapshot_id: int, bmlt_id: int) -> Optional[ServiceBody]:
-    return (
-        db.query(ServiceBody)
-          .filter(ServiceBody.snapshot_id == snapshot_id, ServiceBody.bmlt_id == bmlt_id)
-          .first()
-    )
-
-
-def get_formats_by_snapshot(db: Session, snapshot_id: int, bmlt_ids: list[int]) -> list[Format]:
+def get_formats_by_bmlt_ids(db: Session, snapshot_id: int, bmlt_ids: list[int]) -> list[Format]:
     return (
         db.query(Format)
           .filter(Format.snapshot_id == snapshot_id, Format.bmlt_id.in_(bmlt_ids))
@@ -132,6 +106,10 @@ def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: in
           .filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id)
           .first()
     )
+
+
+def get_meeting_naws_codes_by_server(db: Session, root_server_id: int) -> list[MeetingNawsCode]:
+    return db.query(MeetingNawsCode).filter(MeetingNawsCode.root_server_id == root_server_id).all()
 
 
 def get_meeting_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[MeetingNawsCode]:

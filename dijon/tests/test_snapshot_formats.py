@@ -8,12 +8,12 @@ from dijon.snapshot import BmltFormat, save_formats
 
 
 @pytest.fixture
-def root_server_1(db: Session):
+def root_server_1(db: Session) -> RootServer:
     return crud.create_root_server(db, "root name", "https://blah/main_server/")
 
 
 @pytest.fixture
-def snapshot_1(db: Session, root_server_1: RootServer):
+def snapshot_1(db: Session, root_server_1: RootServer) -> Snapshot:
     return crud.create_snapshot(db, root_server_1)
 
 
