@@ -18,4 +18,4 @@ def get_db():
 
 class Context:
     def __init__(self, db: Session = Depends(get_db)):
-        self.db_session = db
+        self.db = db

@@ -16,22 +16,27 @@ from dijon.models import (
     Snapshot,
     VenueTypeEnum,
 )
-from dijon.snapshot import BmltMeeting, save_meetings
+from dijon.snapshot import BmltMeeting, SnapshotCache, save_meetings
 
 
 @pytest.fixture
-def root_server_1(db: Session):
+def root_server_1(db: Session) -> RootServer:
     return crud.create_root_server(db, "root name", "https://blah/main_server/")
 
 
 @pytest.fixture
-def snapshot_1(db: Session, root_server_1: RootServer):
+def snapshot_1(db: Session, root_server_1: RootServer) -> Snapshot:
     return crud.create_snapshot(db, root_server_1)
 
 
 @pytest.fixture
 def service_body_1(db: Session, snapshot_1: Snapshot) -> ServiceBody:
     return crud.create_service_body(db, snapshot_1.id, 1, "sb name", "AS")
+
+
+@pytest.fixture
+def cache(db: Session, snapshot_1: Snapshot) -> SnapshotCache:
+    return SnapshotCache(db, snapshot_1)
 
 
 def get_mock_raw_meeting() -> dict[str, str]:
@@ -553,62 +558,62 @@ def test_parse_raw_meeting_published():
         BmltMeeting(**mock_meeting)
 
 
-def test_bmlt_format_to_db_bmlt_id(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_bmlt_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.id_bigint = 123
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.bmlt_id == 123
 
     with pytest.raises(IntegrityError):
         bmlt_meeting.id_bigint = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_name(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_name(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.meeting_name = "Living The Program"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.name == "Living The Program"
 
     with pytest.raises(IntegrityError):
         bmlt_meeting.meeting_name = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_day(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_day(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.weekday_tinyint = 1
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.day == DayOfWeekEnum.SUNDAY
 
     with pytest.raises(ValueError):
         bmlt_meeting.weekday_tinyint = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_service_body_id(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_service_body_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.service_body_id == service_body_1.id
@@ -616,432 +621,433 @@ def test_bmlt_format_to_db_service_body_id(db: Session, snapshot_1: Snapshot, se
 
     with pytest.raises(ValueError):
         bmlt_meeting.service_body_bigint = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_start_time(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_start_time(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.start_time = time(hour=1, minute=30)
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.start_time == time(hour=1, minute=30)
 
     with pytest.raises(IntegrityError):
         bmlt_meeting.start_time = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_duration(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_duration(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.duration_time = timedelta(hours=1)
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.duration == timedelta(hours=1)
 
     with pytest.raises(IntegrityError):
         bmlt_meeting.duration_time = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_venue_type(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_venue_type(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.venue_type = 1
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.venue_type == VenueTypeEnum.IN_PERSON
 
     bmlt_meeting.venue_type = 2
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.venue_type == VenueTypeEnum.VIRTUAL
 
     bmlt_meeting.venue_type = 3
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.venue_type == VenueTypeEnum.HYBRID
 
     bmlt_meeting.venue_type = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.venue_type == VenueTypeEnum.NONE
 
 
-def test_bmlt_format_to_db_time_zone(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_time_zone(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.time_zone = "America/New_York"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.time_zone == "America/New_York"
 
     bmlt_meeting.time_zone = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_longitude(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_longitude(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.longitude = Decimal("34.6840723")
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.longitude == Decimal("34.6840723")
 
     bmlt_meeting.longitude = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_latitude(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_latitude(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.latitude = Decimal("34.6840723")
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.latitude == Decimal("34.6840723")
 
     bmlt_meeting.latitude = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_comments(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_comments(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.comments = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.comments == "a really cool string"
 
     bmlt_meeting.comments = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_virtual_meeting_additional_info(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_virtual_meeting_additional_info(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.virtual_meeting_additional_info = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.virtual_meeting_additional_info == "a really cool string"
 
     bmlt_meeting.virtual_meeting_additional_info = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_city_subsection(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_city_subsection(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_city_subsection = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_city_subsection == "a really cool string"
 
     bmlt_meeting.location_city_subsection = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_virtual_meeting_link(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_virtual_meeting_link(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.virtual_meeting_link = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.virtual_meeting_link == "a really cool string"
 
     bmlt_meeting.virtual_meeting_link = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_phone_meeting_number(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_phone_meeting_number(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.phone_meeting_number = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.phone_meeting_number == "a really cool string"
 
     bmlt_meeting.phone_meeting_number = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_nation(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_nation(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_nation = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_nation == "a really cool string"
 
     bmlt_meeting.location_nation = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_postal_code_1(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_postal_code_1(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_postal_code_1 = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_postal_code_1 == "a really cool string"
 
     bmlt_meeting.location_postal_code_1 = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_province(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_province(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_province = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_province == "a really cool string"
 
     bmlt_meeting.location_province = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_sub_province(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_sub_province(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_sub_province = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_sub_province == "a really cool string"
 
     bmlt_meeting.location_sub_province = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_municipality(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_municipality(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_municipality = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_municipality == "a really cool string"
 
     bmlt_meeting.location_municipality = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_neighborhood(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_neighborhood(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_neighborhood = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_neighborhood == "a really cool string"
 
     bmlt_meeting.location_neighborhood = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_street(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_street(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_street = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_street == "a really cool string"
 
     bmlt_meeting.location_street = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_info(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_info(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_info = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_info == "a really cool string"
 
     bmlt_meeting.location_info = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_location_text(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_text(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.location_text = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.location_text == "a really cool string"
 
     bmlt_meeting.location_text = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_bus_lines(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_bus_lines(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.bus_lines = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.bus_lines == "a really cool string"
 
     bmlt_meeting.bus_lines = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_train_lines(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_train_lines(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.train_lines = "a really cool string"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.train_lines == "a really cool string"
 
     bmlt_meeting.train_lines = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_published(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_published(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.published = True
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.published is True
 
     bmlt_meeting.published = False
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.published is False
 
     with pytest.raises(IntegrityError):
         bmlt_meeting.published = None
-        db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+        db_meeting, _ = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.flush()
 
 
-def test_bmlt_format_to_db_world_id(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_world_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
     bmlt_meeting.worldid_mixed = "G00013329"
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     assert db_meeting.world_id == "G00013329"
 
     bmlt_meeting.worldid_mixed = None
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
 
 
-def test_bmlt_format_to_db_naws_code(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_naws_code(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
 
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
     assert db_meeting.meeting_naws_code_id is None
 
-    naws_code = MeetingNawsCode(root_server_id=snapshot_1.root_server_id, bmlt_id=bmlt_meeting.id_bigint)
+    naws_code = MeetingNawsCode(root_server_id=cache.snapshot.root_server_id, bmlt_id=bmlt_meeting.id_bigint)
     db.add(naws_code)
     db.flush()
     db.refresh(naws_code)
 
-    db_meeting, _ = bmlt_meeting.to_db(db, snapshot_1)
+    cache.clear()
+    db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
     db.refresh(db_meeting)
@@ -1049,14 +1055,14 @@ def test_bmlt_format_to_db_naws_code(db: Session, snapshot_1: Snapshot, service_
     assert db_meeting.naws_code == naws_code
 
 
-def test_bmlt_format_to_db_meeting_formats(db: Session, snapshot_1: Snapshot, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_meeting_formats(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
-    db_format_1 = crud.create_format(db, snapshot_1.id, 1, "O")
-    db_format_2 = crud.create_format(db, snapshot_1.id, 2, "BEG")
+    db_format_1 = crud.create_format(db, cache.snapshot.id, 1, "O")
+    db_format_2 = crud.create_format(db, cache.snapshot.id, 2, "BEG")
 
     bmlt_meeting.format_shared_id_list = [1, 2, 3]
-    db_meeting, db_meeting_formats = bmlt_meeting.to_db(db, snapshot_1)
+    db_meeting, db_meeting_formats = bmlt_meeting.to_db(db, cache)
     assert len(db_meeting_formats) == 2
     db.add(db_meeting)
     db.add_all(db_meeting_formats)

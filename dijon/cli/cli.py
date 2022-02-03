@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,6 +7,9 @@ import click
 import uvicorn
 
 from dijon import crud, database, snapshot
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 @click.group()
@@ -36,7 +40,7 @@ def run_migrations():
 
 @cli.command()
 @click.option("--root-server-id", default=0, show_default=False)
-def create_snapshot(root_server_id: int):
+def run_snapshot(root_server_id: int):
     with database.db_context() as db:
         if root_server_id:
             root_server = crud.get_root_server(db, root_server_id)

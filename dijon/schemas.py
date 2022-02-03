@@ -1,16 +1,20 @@
-from pydantic import BaseModel
+from pydantic import AnyHttpUrl, BaseModel, constr
 
 
-class Echo(BaseModel):
-    message: str
-
-
-class EchoRequest(Echo):
-    pass
-
-
-class EchoResponse(Echo):
-    id: int
+# Root Server
+#
+#
+class RootServerBase(BaseModel):
+    name: constr(min_length=1, max_length=255)
+    url: AnyHttpUrl
 
     class Config:
         orm_mode = True
+
+
+class RootServer(RootServerBase):
+    id: int
+
+
+class RootServerCreate(RootServerBase):
+    pass

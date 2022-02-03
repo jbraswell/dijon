@@ -21,7 +21,7 @@ def get_db_url():
 
 class Ctx:
     def __init__(self, db: Session, client: TestClient):
-        self.db_session = db
+        self.db = db
         self.client = client
 
 
