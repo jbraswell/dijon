@@ -72,6 +72,12 @@ def create_root_server(db: Session, name: str, url: str) -> RootServer:
     return root_server
 
 
+def delete_root_server(db: Session, root_server_id: int) -> bool:
+    num_rows = db.query(RootServer).filter(RootServer.id == root_server_id).delete()
+    db.flush()
+    return num_rows != 0
+
+
 def get_root_server(db: Session, root_server_id: int) -> Optional[RootServer]:
     return db.query(RootServer).filter(RootServer.id == root_server_id).first()
 

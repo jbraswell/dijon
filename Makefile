@@ -10,3 +10,8 @@ test:
 .PHONY: docker
 docker:
 	docker buildx build --platform linux/amd64 -f Dockerfile -t dijon .
+
+.PHONY: publish
+publish: docker
+	docker tag dijon:latest bmltenabled/dijon:latest
+	docker push bmltenabled/dijon:latest
