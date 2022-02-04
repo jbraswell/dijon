@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+docker run \
+  --network=host \
+  -e DYNACONF_DBUSER=dijon \
+  -e DYNACONF_DBNAME=dijon \
+  -e DYNACONF_DBHOST=0.0.0.0 \
+  -e DYNACONF_DBPORT=3306 \
+  --env-file=/opt/dijon/compose/dijon.secret.env \
+  bmltenabled/dijon dijon run-snapshot
