@@ -16,6 +16,7 @@ from dijon.models import (
     Token,
     User,
 )
+from dijon.settings import settings
 
 
 # root servers
@@ -161,6 +162,17 @@ def create_user(db: Session, username: str, email: str, password: str, is_active
         return None
     db.refresh(db_user)
     return db_user
+
+
+def create_default_admin_user(db: Session) -> tuple[User, bool]:
+    db_user = get_user_by_username(db, settings.ADMIN_USERNAME)
+    if db_user is None:
+        db_user = create_user(db, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, settings.ADMIN_PASSWORD, is_admin=True)
+        print(f"Created admin user '{settings.ADMIN_USERNAME}'")
+        return db_user, True
+    else:
+        print(f"Admin user '{settings.ADMIN_USERNAME}' already exists")
+        return db_user, False
 
 
 def update_user(

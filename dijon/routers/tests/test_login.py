@@ -3,13 +3,13 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from dynaconf import settings
 from jose import jwt
 from sqlalchemy.orm import Session
 
 from dijon import crud, models, schemas
 from dijon.conftest import Ctx
-from dijon.routers.login import create_access_token, create_refresh_token
+from dijon.settings import settings
+from dijon.token_util import create_access_token, create_refresh_token
 
 
 def get_token_post_data() -> schemas.Token:
@@ -31,13 +31,13 @@ def get_token_post_data2() -> schemas.Token:
 @pytest.fixture
 def db_user_1(db: Session) -> models.User:
     post_data = get_token_post_data()
-    return crud.create_user(db, post_data["username"], "nobody@jrb.lol", post_data["password"])
+    return crud.create_user(db, post_data["username"], "logintest@jrb.lol", post_data["password"])
 
 
 @pytest.fixture
 def db_user_2(db: Session) -> models.User:
     post_data = get_token_post_data2()
-    return crud.create_user(db, post_data["username"], "nobody2@jrb.lol", post_data["password"])
+    return crud.create_user(db, post_data["username"], "logintest2@jrb.lol", post_data["password"])
 
 
 def test_login_success(ctx: Ctx, db_user_1: models.User):
@@ -72,7 +72,7 @@ def test_create_refresh_token(ctx: Ctx, db_user_1: models.User):
 def test_refresh_a_token(ctx: Ctx, db_user_1: models.User):
     refresh_token = create_refresh_token(ctx.db, db_user_1)
     post_data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
-    with patch("dijon.routers.login.get_refresh_token_expiration_delta", autospec=True) as get_timedelta:
+    with patch("dijon.token_util.get_refresh_token_expiration_delta", autospec=True) as get_timedelta:
         # we have to change the time so we don't get the same token twice
         get_timedelta.return_value = datetime.utcnow() + timedelta(seconds=5)
         response = ctx.client.post("/token", data=post_data)
