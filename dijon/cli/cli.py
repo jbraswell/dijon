@@ -9,9 +9,6 @@ import uvicorn
 from dijon import crud, database, snapshot
 
 
-logging.basicConfig(level=logging.INFO)
-
-
 @click.group()
 def cli():
     pass
@@ -19,6 +16,7 @@ def cli():
 
 @cli.command()
 def create_admin_user():
+    logging.basicConfig(level=logging.INFO)
     with database.db_context() as db:
         db_user, created = crud.create_default_admin_user(db)
         if created:
@@ -46,6 +44,7 @@ def run_migrations():
 @cli.command()
 @click.option("--root-server-id", default=0, show_default=False)
 def run_snapshot(root_server_id: int):
+    logging.basicConfig(level=logging.INFO)
     with database.db_context() as db:
         if root_server_id:
             root_server = crud.get_root_server(db, root_server_id)
