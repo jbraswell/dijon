@@ -176,3 +176,30 @@ class Snapshot(Base):
     root_server = relationship("RootServer", uselist=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(255), unique=True, index=True)
+    email = Column(String(255), unique=True, index=True)
+    hashed_password = Column(String(255))
+    tokens = relationship("Token", back_populates="user", cascade="all, delete")
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __unicode__(self):
+        return self.username
+
+
+class Token(Base):
+    __tablename__ = "tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(255), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    user_id = Column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user = relationship("User", back_populates="tokens", uselist=False)
