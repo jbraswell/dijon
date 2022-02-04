@@ -5,6 +5,7 @@ import sys
 import alembic.config
 import click
 import uvicorn
+from dynaconf import settings
 
 from dijon import crud, database, snapshot
 
@@ -18,8 +19,14 @@ def cli():
 
 
 @cli.command()
-def ping():
-    print("pong")
+def create_admin_user():
+    with database.db_context() as db:
+        db_user = crud.get_user_by_username(db, settings.ADMIN_USERNAME)
+        if db_user is None:
+            crud.create_user(db, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, settings.ADMIN_PASSWORD, is_admin=True)
+            print(f"Created admin user '{settings.ADMIN_USERNAME}'")
+        else:
+            print(f"Admin user '{settings.ADMIN_USERNAME}' already exists")
 
 
 @cli.command()
