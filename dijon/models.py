@@ -62,7 +62,7 @@ class ServiceBody(Base):
     world_id = Column(String(20), nullable=True)
     service_body_naws_code_id = Column(ForeignKey("service_body_naws_codes.id"), nullable=True)
     naws_code = relationship("ServiceBodyNawsCode", uselist=False)
-    meetings = relationship("Meeting", back_populates="service_body")
+    meetings = relationship("Meeting", back_populates="service_body", cascade="all, delete")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -107,12 +107,12 @@ class Meeting(Base):
     __tablename__ = "meetings"
 
     id = Column(Integer, primary_key=True, index=True)
-    snapshot_id = Column(ForeignKey("snapshots.id"), nullable=False)
+    snapshot_id = Column(ForeignKey("snapshots.id", ondelete="CASCADE"), nullable=False)
     snapshot = relationship("Snapshot", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
     name = Column(String(255), nullable=False)
     day = Column(Enum(DayOfWeekEnum), nullable=False)
-    service_body_id = Column(ForeignKey("service_bodies.id"), nullable=False)
+    service_body_id = Column(ForeignKey("service_bodies.id", ondelete="CASCADE"), nullable=False)
     service_body = relationship("ServiceBody", back_populates="meetings", uselist=False)
     venue_type = Column(Enum(VenueTypeEnum), nullable=False)
     start_time = Column(Time, nullable=False)
