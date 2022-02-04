@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 80fce522d64b
+Revision ID: e833cc944cd9
 Revises: 
-Create Date: 2022-02-03 12:39:44.859035
+Create Date: 2022-02-03 21:02:27.750833
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '80fce522d64b'
+revision = 'e833cc944cd9'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,11 +27,25 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_root_servers_id'), 'root_servers', ['id'], unique=False)
+    op.create_table('users',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('username', sa.String(length=255), nullable=True),
+    sa.Column('email', sa.String(length=255), nullable=True),
+    sa.Column('hashed_password', sa.String(length=255), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('format_naws_codes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('root_server_id', sa.Integer(), nullable=False),
     sa.Column('bmlt_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['root_server_id'], ['root_servers.id'], ),
+    sa.ForeignKeyConstraint(['root_server_id'], ['root_servers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_format_naws_codes_id'), 'format_naws_codes', ['id'], unique=False)
@@ -49,7 +63,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('root_server_id', sa.Integer(), nullable=False),
     sa.Column('bmlt_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['root_server_id'], ['root_servers.id'], ),
+    sa.ForeignKeyConstraint(['root_server_id'], ['root_servers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_service_body_naws_codes_id'), 'service_body_naws_codes', ['id'], unique=False)
@@ -62,6 +76,18 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_snapshots_id'), 'snapshots', ['id'], unique=False)
+    op.create_table('tokens',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('token', sa.String(length=255), nullable=False),
+    sa.Column('expires_at', sa.DateTime(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_tokens_expires_at'), 'tokens', ['expires_at'], unique=False)
+    op.create_index(op.f('ix_tokens_id'), 'tokens', ['id'], unique=False)
+    op.create_index(op.f('ix_tokens_token'), 'tokens', ['token'], unique=False)
+    op.create_index(op.f('ix_tokens_user_id'), 'tokens', ['user_id'], unique=False)
     op.create_table('formats',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('snapshot_id', sa.Integer(), nullable=False),
@@ -91,7 +117,7 @@ def upgrade():
     sa.Column('service_body_naws_code_id', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['parent_id'], ['service_bodies.id'], ),
+    sa.ForeignKeyConstraint(['parent_id'], ['service_bodies.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['service_body_naws_code_id'], ['service_body_naws_codes.id'], ),
     sa.ForeignKeyConstraint(['snapshot_id'], ['snapshots.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -132,8 +158,8 @@ def upgrade():
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
     sa.ForeignKeyConstraint(['meeting_naws_code_id'], ['meeting_naws_codes.id'], ),
-    sa.ForeignKeyConstraint(['service_body_id'], ['service_bodies.id'], ),
-    sa.ForeignKeyConstraint(['snapshot_id'], ['snapshots.id'], ),
+    sa.ForeignKeyConstraint(['service_body_id'], ['service_bodies.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['snapshot_id'], ['snapshots.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_meetings_id'), 'meetings', ['id'], unique=False)
@@ -158,6 +184,11 @@ def downgrade():
     op.drop_table('service_bodies')
     op.drop_index(op.f('ix_formats_id'), table_name='formats')
     op.drop_table('formats')
+    op.drop_index(op.f('ix_tokens_user_id'), table_name='tokens')
+    op.drop_index(op.f('ix_tokens_token'), table_name='tokens')
+    op.drop_index(op.f('ix_tokens_id'), table_name='tokens')
+    op.drop_index(op.f('ix_tokens_expires_at'), table_name='tokens')
+    op.drop_table('tokens')
     op.drop_index(op.f('ix_snapshots_id'), table_name='snapshots')
     op.drop_table('snapshots')
     op.drop_index(op.f('ix_service_body_naws_codes_id'), table_name='service_body_naws_codes')
@@ -166,6 +197,10 @@ def downgrade():
     op.drop_table('meeting_naws_codes')
     op.drop_index(op.f('ix_format_naws_codes_id'), table_name='format_naws_codes')
     op.drop_table('format_naws_codes')
+    op.drop_index(op.f('ix_users_username'), table_name='users')
+    op.drop_index(op.f('ix_users_id'), table_name='users')
+    op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_table('users')
     op.drop_index(op.f('ix_root_servers_id'), table_name='root_servers')
     op.drop_table('root_servers')
     # ### end Alembic commands ###
