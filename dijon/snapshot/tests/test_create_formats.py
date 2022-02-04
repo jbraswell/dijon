@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from dijon import crud
 from dijon.models import Format, FormatNawsCode, RootServer, Snapshot
-from dijon.snapshot import BmltFormat, save_formats
+from dijon.snapshot.create import BmltFormat, save_formats
 
 
 @pytest.fixture

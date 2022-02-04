@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dijon import crud
 from dijon.models import RootServer, ServiceBody, ServiceBodyNawsCode, Snapshot
-from dijon.snapshot import BmltServiceBody, save_service_bodies
+from dijon.snapshot.create import BmltServiceBody, save_service_bodies
 
 
 @pytest.fixture

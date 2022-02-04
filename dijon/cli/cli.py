@@ -56,7 +56,7 @@ def run_snapshot(root_server_id: int):
             root_servers = crud.get_root_servers(db)
 
         for root_server in root_servers:
-            snapshot.create_snapshot(db, root_server)
+            snapshot.create(db, root_server)
             db.commit()
 
 

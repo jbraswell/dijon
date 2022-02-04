@@ -9,7 +9,7 @@ from dijon.database import Base
 from dijon.dependencies import get_db
 from dijon.main import app
 from dijon.settings import settings
-from dijon.token_util import create_access_token
+from dijon.utils.token_util import create_access_token
 
 
 def get_db_url():

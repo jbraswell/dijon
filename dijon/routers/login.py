@@ -7,10 +7,11 @@ from pydantic import BaseModel, root_validator
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from dijon import crud, password_util, schemas
+from dijon import crud, schemas
 from dijon.dependencies import Context, get_db
 from dijon.settings import settings
-from dijon.token_util import create_access_token, create_refresh_token
+from dijon.utils import password_util
+from dijon.utils.token_util import create_access_token, create_refresh_token
 
 
 router = APIRouter()
