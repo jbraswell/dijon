@@ -1,22 +1,12 @@
 import pytest
-from sqlalchemy.orm import Session
 
-from dijon import crud, models, schemas
+from dijon import crud, schemas
 from dijon.conftest import Ctx
-from dijon.routers.login import create_access_token
 
 
 @pytest.fixture
-def user(db: Session) -> models.User:
-    return crud.create_user(db, "username", "nobody@jrb.lol", "password")
-
-
-@pytest.fixture
-def headers(db: Session, user: models.User) -> dict[str, str]:
-    # TODO creating access tokens is slow, so precreate an admin user
-    # TODO and token for the duration of all tests
-    access_token = create_access_token(db, user)
-    headers = {"Authorization": f"bearer {access_token}"}
+def headers(admin_access_token: str) -> dict[str, str]:
+    headers = {"Authorization": f"bearer {admin_access_token}"}
     return headers
 
 

@@ -1,16 +1,16 @@
-from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
 
-from dynaconf import settings
 from fastapi import APIRouter, Depends, Form, HTTPException, Response
 from jose import JWTError, jwt
 from pydantic import BaseModel, root_validator
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_200_OK, HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from dijon import crud, models, password_util, schemas
+from dijon import crud, password_util, schemas
 from dijon.dependencies import Context, get_db
+from dijon.settings import settings
+from dijon.token_util import create_access_token, create_refresh_token
 
 
 router = APIRouter()
@@ -63,35 +63,6 @@ class OAuth2RequestForm:
         self.username = username
         self.password = password
         self.refresh_token = refresh_token
-
-
-def get_access_token_expiration_delta():
-    return datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRATION_SECONDS)
-
-
-def get_refresh_token_expiration_delta():
-    return datetime.utcnow() + timedelta(days=30)
-
-
-def create_access_token(db: Session, db_user: models.User):
-    return _create_token(db, db_user, "access")
-
-
-def create_refresh_token(db: Session, db_user: models.User):
-    return _create_token(db, db_user, "refresh")
-
-
-def _create_token(db: Session, db_user: models.User, token_type: str):
-    expires_at = get_refresh_token_expiration_delta() if token_type == "refresh" else get_access_token_expiration_delta()
-    data = {
-        "sub": db_user.username,
-        "user_id": db_user.id,
-        "exp": expires_at,
-        "type": "refresh" if token_type == "refresh" else "access"
-    }
-    token = jwt.encode(data, settings.TOKEN_SECRET_KEY, algorithm=settings.TOKEN_ALGORITHM)
-    crud.create_token(db, token, db_user.id, expires_at)
-    return token
 
 
 @router.post("/token", response_model=schemas.Token)

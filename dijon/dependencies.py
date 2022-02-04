@@ -1,6 +1,5 @@
 from typing import Optional
 
-from dynaconf import settings
 from fastapi import Depends, Security
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from dijon import crud, models
 from dijon.database import SessionLocal
+from dijon.settings import settings
 
 
 def get_db():

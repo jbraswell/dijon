@@ -4,10 +4,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
+from dijon.crud import create_default_admin_user
 from dijon.database import Base
 from dijon.dependencies import get_db
 from dijon.main import app
 from dijon.settings import settings
+from dijon.token_util import create_access_token
 
 
 def get_db_url():
@@ -27,12 +29,27 @@ class Ctx:
 
 @pytest.fixture(scope="session")
 def engine():
+    global _access_token
     engine = create_engine(get_db_url())
     if database_exists(engine.url):
         drop_database(engine.url)
     create_database(engine.url)
     Base.metadata.create_all(bind=engine)
+    with sessionmaker(autocommit=False, autoflush=False, bind=engine)() as session:
+        admin_user, _ = create_default_admin_user(session)
+        _access_token = create_access_token(session, admin_user)
+        session.commit()
     yield engine
+
+
+# creating lots of access tokens gets slow, so we just make one here
+# that all of the tests can use
+_access_token = None
+
+
+@pytest.fixture(scope="session")
+def admin_access_token():
+    return _access_token
 
 
 @pytest.fixture
