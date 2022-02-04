@@ -4,6 +4,8 @@ services:
   mariadb:
     volumes:
        - /opt/dijon/mysql:/var/lib/mysql
+    env_file:
+      - mariadb.secret.env
     deploy:
       restart_policy:
         condition: on-failure
@@ -17,6 +19,8 @@ services:
       - traefik.http.routers.fastapi.rule=Host(`dijon.jrb.lol`)
       - traefik.http.routers.fastapi.tls=true
       - traefik.http.routers.fastapi.tls.certresolver=letsencrypt
+    env_file:
+      - dijon.secret.env
     deploy:
       restart_policy:
         condition: on-failure
