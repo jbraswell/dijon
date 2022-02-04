@@ -52,7 +52,7 @@ class ServiceBody(Base):
     snapshot_id = Column(ForeignKey("snapshots.id", ondelete="CASCADE"), nullable=False)
     snapshot = relationship("Snapshot", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
-    parent_id = Column(ForeignKey("service_bodies.id"), nullable=True)
+    parent_id = Column(ForeignKey("service_bodies.id", ondelete="SET NULL"), nullable=True)
     parent = relationship("ServiceBody", remote_side=[id])
     name = Column(String(255), nullable=False)
     type = Column(String(20), nullable=False)
