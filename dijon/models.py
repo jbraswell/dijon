@@ -40,7 +40,7 @@ class ServiceBodyNawsCode(Base):
     __tablename__ = "service_body_naws_codes"
 
     id = Column(Integer, primary_key=True, index=True)
-    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
+    root_server_id = Column(ForeignKey("root_servers.id", ondelete="CASCADE"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
 
@@ -71,7 +71,7 @@ class FormatNawsCode(Base):
     __tablename__ = "format_naws_codes"
 
     id = Column(Integer, primary_key=True, index=True)
-    root_server_id = Column(ForeignKey("root_servers.id"), nullable=False)
+    root_server_id = Column(ForeignKey("root_servers.id", ondelete="CASCADE"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
 
