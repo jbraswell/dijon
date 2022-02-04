@@ -1,13 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from datetime import date, datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from starlette.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
 )
 
-from dijon import crud, schemas
+from dijon import crud, schemas, snapshot
 from dijon.dependencies import Context
 
 
@@ -50,3 +54,39 @@ def delete_root_server(root_server_id: int, ctx: Context = Depends()):
 
     if not crud.delete_root_server(ctx.db, root_server_id):
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+
+
+@router.get("/rootservers/{root_server_id}/changes/meetings", response_model=schemas.MeetingChangesResponse, status_code=HTTP_200_OK)
+def list_meeting_changes(
+    root_server_id: int,
+    start_date: date,
+    end_date: Optional[date] = None,
+    service_body_ids: Optional[list[int]] = Query(None),
+    ctx: Context = Depends()
+):
+    # TODO this is mostly tested by snapshot.diff's test, but write a couple of tests to validate
+    # TODO the logic in this controller function
+    if not ctx.is_authenticated:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
+
+    if end_date is None:
+        end_date = datetime.utcnow().date()
+
+    if end_date <= start_date:
+        raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Start date must be before end date")
+
+    old_snapshot = crud.get_nearest_snapshot_by_date(ctx.db, root_server_id, start_date)
+    if not old_snapshot:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="No snapshots found on or before start date")
+
+    new_snapshot = crud.get_nearest_snapshot_by_date(ctx.db, root_server_id, end_date)
+    if new_snapshot == old_snapshot:
+        events = []
+    else:
+        events = snapshot.diff(ctx.db, old_snapshot.id, new_snapshot.id, service_body_ids)
+
+    return schemas.MeetingChangesResponse(
+        start_date=old_snapshot.created_at.date(),
+        end_date=new_snapshot.created_at.date(),
+        events=events,
+    )

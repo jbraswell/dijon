@@ -16,7 +16,7 @@ from dijon.models import (
     Snapshot,
     VenueTypeEnum,
 )
-from dijon.snapshot import BmltMeeting, SnapshotCache, save_meetings
+from dijon.snapshot.create import BmltMeeting, SnapshotCache, save_meetings
 
 
 @pytest.fixture

@@ -1,6 +1,9 @@
+from datetime import date
 from typing import Optional
 
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, constr
+
+from dijon.snapshot.diff import MeetingEvent
 
 
 # Root Server
@@ -66,3 +69,12 @@ class Token(BaseModel):
 
 class Logout(BaseModel):
     refresh_token: str
+
+
+# MeetingChanges
+#
+#
+class MeetingChangesResponse(BaseModel):
+    start_date: date
+    end_date: date
+    events: list[MeetingEvent]

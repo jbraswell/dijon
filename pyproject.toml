@@ -10,7 +10,7 @@ dijon = "dijon.cli.cli:cli"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-fastapi = "^0.70.0"
+fastapi = "^0.73.0"
 SQLAlchemy = "^1.4.26"
 alembic = "^1.7.4"
 uvicorn = "^0.15.0"

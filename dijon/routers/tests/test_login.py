@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from dijon import crud, models, schemas
 from dijon.conftest import Ctx
 from dijon.settings import settings
-from dijon.token_util import create_access_token, create_refresh_token
+from dijon.utils.token_util import create_access_token, create_refresh_token
 
 
 def get_token_post_data() -> schemas.Token:
@@ -72,7 +72,7 @@ def test_create_refresh_token(ctx: Ctx, db_user_1: models.User):
 def test_refresh_a_token(ctx: Ctx, db_user_1: models.User):
     refresh_token = create_refresh_token(ctx.db, db_user_1)
     post_data = {"grant_type": "refresh_token", "refresh_token": refresh_token}
-    with patch("dijon.token_util.get_refresh_token_expiration_delta", autospec=True) as get_timedelta:
+    with patch("dijon.utils.token_util.get_refresh_token_expiration_delta", autospec=True) as get_timedelta:
         # we have to change the time so we don't get the same token twice
         get_timedelta.return_value = datetime.utcnow() + timedelta(seconds=5)
         response = ctx.client.post("/token", data=post_data)

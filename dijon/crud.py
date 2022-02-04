@@ -1,13 +1,15 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
+from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from dijon import password_util
 from dijon.models import (
     Format,
     FormatNawsCode,
+    Meeting,
+    MeetingFormat,
     MeetingNawsCode,
     RootServer,
     ServiceBody,
@@ -17,6 +19,7 @@ from dijon.models import (
     User,
 )
 from dijon.settings import settings
+from dijon.utils import password_util
 
 
 # root servers
@@ -53,6 +56,14 @@ def create_snapshot(db: Session, root_server: RootServer) -> Snapshot:
     db.flush()
     db.refresh(snapshot)
     return snapshot
+
+
+def get_nearest_snapshot_by_date(db: Session, root_server_id: int, search_date: date) -> Optional[Snapshot]:
+    query = db.query(Snapshot)
+    query = query.filter(Snapshot.root_server_id == root_server_id)
+    query = query.filter(Snapshot.created_at < search_date + timedelta(days=1))
+    query = query.order_by(desc(Snapshot.created_at))
+    return query.first()
 
 
 # service bodies
@@ -145,6 +156,15 @@ def get_meeting_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: i
           .filter(MeetingNawsCode.root_server_id == root_server_id, MeetingNawsCode.bmlt_id == bmlt_id)
           .first()
     )
+
+
+def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[Meeting]:
+    query = db.query(Meeting).filter(Meeting.snapshot_id == snapshot_id)
+    if service_body_bmlt_ids is not None:
+        query = query.join(ServiceBody).filter(ServiceBody.bmlt_id.in_(service_body_bmlt_ids))
+    query = query.options(selectinload(Meeting.meeting_formats).selectinload(MeetingFormat.format).selectinload(Format.naws_code))
+    query = query.options(selectinload(Meeting.service_body).selectinload(ServiceBody.parent).selectinload(ServiceBody.naws_code))
+    return query.all()
 
 
 # users

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from dijon import crud
 from dijon.conftest import Ctx
 from dijon.dependencies import Context
-from dijon.token_util import create_access_token
+from dijon.utils.token_util import create_access_token
 
 
 def test_context_token_non_admin_valid(ctx: Ctx):
@@ -79,9 +79,9 @@ def test_context_token_invalid_signature(ctx: Ctx):
     assert not context.user
 
 
-def test_context_token_expired(ctx, monkeypatch):
+def test_context_token_expired(ctx):
     db_user = crud.create_user(ctx.db, "username", "contexttest@jrb.lol", "securepassword")
-    with patch("dijon.token_util.get_access_token_expiration_delta", autospec=True) as get_timedelta:
+    with patch("dijon.utils.token_util.get_access_token_expiration_delta", autospec=True) as get_timedelta:
         get_timedelta.return_value = datetime.utcnow() - timedelta(hours=1)
         access_token = create_access_token(ctx.db, db_user)
     context = Context(token=access_token, db=ctx.db)
