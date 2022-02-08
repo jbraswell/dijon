@@ -6,7 +6,8 @@ import pytest
 from sqlalchemy.orm import Session
 
 from dijon import crud, models
-from dijon.snapshot.diff import Data, MeetingEventType, diff_snapshots
+from dijon.snapshot import structs
+from dijon.snapshot.diff import Data, diff_snapshots
 
 
 def create_root_server(db: Session) -> models.RootServer:
@@ -150,7 +151,7 @@ def test_diff_meeting_sb_filter(mtg_1_snap_1, mtg_1_snap_2, mtg_2_snap_2):
     events = data.diff()
     assert len(events) == 1
     event = events[0]
-    assert event.event_type == MeetingEventType.MEETING_CREATED
+    assert event.event_type == structs.MeetingEventType.MEETING_CREATED
     assert event.old_meeting is None
     assert event.new_meeting is not None
 
@@ -160,7 +161,7 @@ def test_diff_meeting_created(mtg_1_snap_1, mtg_1_snap_2, mtg_2_snap_2):
     events = data.diff()
     assert len(events) == 1
     event = events[0]
-    assert event.event_type == MeetingEventType.MEETING_CREATED
+    assert event.event_type == structs.MeetingEventType.MEETING_CREATED
     assert event.old_meeting is None
     assert event.new_meeting is not None
 
@@ -170,7 +171,7 @@ def test_diff_meeting_deleted(mtg_1_snap_1, mtg_2_snap_1, mtg_1_snap_2):
     events = data.diff()
     assert len(events) == 1
     event = events[0]
-    assert event.event_type == MeetingEventType.MEETING_DELETED
+    assert event.event_type == structs.MeetingEventType.MEETING_DELETED
     assert event.old_meeting is not None
     assert event.new_meeting is None
 

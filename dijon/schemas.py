@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import AnyHttpUrl, BaseModel, EmailStr, constr
 
-from dijon.snapshot.diff import MeetingEvent
+from dijon.snapshot.diff import structs
 
 
 # Root Server
@@ -77,4 +77,4 @@ class Logout(BaseModel):
 class MeetingChangesResponse(BaseModel):
     start_date: date
     end_date: date
-    events: list[MeetingEvent]
+    events: list[structs.MeetingEvent]
