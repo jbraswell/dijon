@@ -43,6 +43,8 @@ def create_root_server(root_server: schemas.RootServerCreate, ctx: Context = Dep
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
+    root_server.url = root_server.url.strip()
+
     if not root_server.url.endswith("/"):
         root_server.url += "/"
     return crud.create_root_server(ctx.db, root_server.name, root_server.url)
