@@ -59,7 +59,7 @@ def delete_root_server(root_server_id: int, ctx: Context = Depends()):
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
 
 
-@router.get("/rootservers/{root_server_id}/snapshot/{date}/meetings", response_model=list[structs.Meeting], status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/snapshots/{date}/meetings", response_model=list[structs.Meeting], status_code=HTTP_200_OK)
 def list_meetings(
     root_server_id: int,
     date: date,
