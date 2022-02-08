@@ -58,6 +58,14 @@ def create_snapshot(db: Session, root_server: RootServer) -> Snapshot:
     return snapshot
 
 
+def get_snapshot_by_date(db: Session, root_server_id: int, date: date) -> Optional[Snapshot]:
+    query = db.query(Snapshot)
+    query = query.filter(Snapshot.root_server_id == root_server_id)
+    query = query.filter(Snapshot.created_at > date - timedelta(days=1), Snapshot.created_at < date + timedelta(days=1))
+    query = query.order_by(desc(Snapshot.created_at))
+    return query.first()
+
+
 def get_nearest_snapshot_by_date(db: Session, root_server_id: int, search_date: date) -> Optional[Snapshot]:
     query = db.query(Snapshot)
     query = query.filter(Snapshot.root_server_id == root_server_id)

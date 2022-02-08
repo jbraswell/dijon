@@ -13,6 +13,7 @@ from starlette.status import (
 
 from dijon import crud, schemas, snapshot
 from dijon.dependencies import Context
+from dijon.snapshot import structs
 
 
 router = APIRouter()
@@ -56,19 +57,31 @@ def delete_root_server(root_server_id: int, ctx: Context = Depends()):
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
 
 
+@router.get("/rootservers/{root_server_id}/snapshot/{date}/meetings", response_model=list[structs.Meeting], status_code=HTTP_200_OK)
+def list_meetings(
+    root_server_id: int,
+    date: date,
+    service_body_bmlt_ids: Optional[list[int]] = Query(None),
+    ctx: Context = Depends()
+):
+    # TODO write tests
+    snap = crud.get_snapshot_by_date(ctx.db, root_server_id, date)
+    if not snap:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="No snapshots found on date")
+
+    return snapshot.get_meetings(ctx.db, snap.id, service_body_bmlt_ids)
+
+
 @router.get("/rootservers/{root_server_id}/changes/meetings", response_model=schemas.MeetingChangesResponse, status_code=HTTP_200_OK)
 def list_meeting_changes(
     root_server_id: int,
     start_date: date,
     end_date: Optional[date] = None,
-    service_body_ids: Optional[list[int]] = Query(None),
+    service_body_bmlt_ids: Optional[list[int]] = Query(None),
     ctx: Context = Depends()
 ):
     # TODO this is mostly tested by snapshot.diff's test, but write a couple of tests to validate
     # TODO the logic in this controller function
-    if not ctx.is_authenticated:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
-
     if end_date is None:
         end_date = datetime.utcnow().date()
 
@@ -83,7 +96,7 @@ def list_meeting_changes(
     if new_snapshot == old_snapshot:
         events = []
     else:
-        events = snapshot.diff(ctx.db, old_snapshot.id, new_snapshot.id, service_body_ids)
+        events = snapshot.diff(ctx.db, old_snapshot.id, new_snapshot.id, service_body_bmlt_ids)
 
     return schemas.MeetingChangesResponse(
         start_date=old_snapshot.created_at.date(),
