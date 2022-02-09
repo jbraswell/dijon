@@ -270,6 +270,12 @@ def get_json(url: str) -> list[Any]:
 
 
 def create_snapshot(db: Session, root_server: models.RootServer):
+    # TODO There may be a race condition here with naws codes. It is possible that if the naws
+    # TODO code for an object is changed during snapshot creation, that the snapshot object
+    # TODO will not be saved with the correct naws code. It might make sense to write a cli
+    # TODO command that fixes the naws codes on all objects. We could run that routinely
+    # TODO for eventual consistency purposes, and also call it after creating each snapshot.
+
     logger.info(f"creating snapshot for {root_server.id}:{root_server.url}...")
     snapshot = crud.create_snapshot(db, root_server)
 
