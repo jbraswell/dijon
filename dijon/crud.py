@@ -110,12 +110,12 @@ def get_service_bodies_by_snapshot(db: Session, snapshot_id: int) -> list[Servic
     return db.query(ServiceBody).filter(snapshot_id == snapshot_id).all()
 
 
-def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[ServiceBodyNawsCode]:
-    return (
-        db.query(ServiceBodyNawsCode)
-          .filter(ServiceBodyNawsCode.root_server_id == root_server_id, ServiceBodyNawsCode.bmlt_id == bmlt_id)
-          .first()
-    )
+def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int, lock: bool = False) -> Optional[ServiceBodyNawsCode]:
+    query = db.query(ServiceBodyNawsCode)
+    query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id, ServiceBodyNawsCode.bmlt_id == bmlt_id)
+    if lock:
+        query = query.with_for_update()
+    return query.first()
 
 
 def create_service_body_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str) -> Optional[ServiceBodyNawsCode]:
@@ -126,7 +126,10 @@ def create_service_body_naws_code(db: Session, root_server_id: int, bmlt_id: int
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    db.query(ServiceBody).filter(ServiceBody.snapshot.has(root_server_id=root_server_id)).update({"service_body_naws_code_id": naws_code.id}, synchronize_session=False)
+    query = db.query(ServiceBody)
+    query = query.filter(ServiceBody.snapshot.has(root_server_id=root_server_id))
+    query = query.filter(ServiceBody.bmlt_id == bmlt_id)
+    query.update({"service_body_naws_code_id": naws_code.id}, synchronize_session=False)
     db.flush()
     return naws_code
 
@@ -162,12 +165,12 @@ def get_formats_by_bmlt_ids(db: Session, snapshot_id: int, bmlt_ids: list[int]) 
     )
 
 
-def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[FormatNawsCode]:
-    return (
-        db.query(FormatNawsCode)
-          .filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id)
-          .first()
-    )
+def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int, lock: bool = False) -> Optional[FormatNawsCode]:
+    query = db.query(FormatNawsCode)
+    query = query.filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id)
+    if lock:
+        query = query.with_for_update()
+    return query.first()
 
 
 def create_format_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str) -> Optional[FormatNawsCode]:
@@ -178,7 +181,10 @@ def create_format_naws_code(db: Session, root_server_id: int, bmlt_id: int, code
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    db.query(Format).filter(Format.snapshot.has(root_server_id=root_server_id)).update({"format_naws_code_id": naws_code.id}, synchronize_session=False)
+    query = db.query(Format)
+    query = query.filter(Format.snapshot.has(root_server_id=root_server_id))
+    query = query.filter(Format.bmlt_id == bmlt_id)
+    query.update({"format_naws_code_id": naws_code.id}, synchronize_session=False)
     db.flush()
     return naws_code
 
@@ -192,16 +198,12 @@ def delete_format_naws_code(db: Session, id: int) -> bool:
 # meetings
 #
 #
-def get_meeting_naws_codes_by_server(db: Session, root_server_id: int) -> list[MeetingNawsCode]:
-    return db.query(MeetingNawsCode).filter(MeetingNawsCode.root_server_id == root_server_id).all()
-
-
-def get_meeting_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[MeetingNawsCode]:
-    return (
-        db.query(MeetingNawsCode)
-          .filter(MeetingNawsCode.root_server_id == root_server_id, MeetingNawsCode.bmlt_id == bmlt_id)
-          .first()
-    )
+def get_meeting_naws_codes_by_server(db: Session, root_server_id: int, lock: bool = False) -> list[MeetingNawsCode]:
+    query = db.query(MeetingNawsCode)
+    query = query.filter(MeetingNawsCode.root_server_id == root_server_id)
+    if lock:
+        query = query.with_for_update()
+    return query.all()
 
 
 def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[Meeting]:
@@ -221,7 +223,10 @@ def create_meeting_naws_code(db: Session, root_server_id: int, bmlt_id: int, cod
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    db.query(Meeting).filter(Meeting.snapshot.has(root_server_id=root_server_id)).update({"meeting_naws_code_id": naws_code.id}, synchronize_session=False)
+    query = db.query(Meeting)
+    query = query.filter(Meeting.snapshot.has(root_server_id=root_server_id))
+    query = query.filter(Meeting.bmlt_id == bmlt_id)
+    query.update({"meeting_naws_code_id": naws_code.id}, synchronize_session=False)
     db.flush()
     return naws_code
 

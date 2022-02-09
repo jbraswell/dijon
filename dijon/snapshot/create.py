@@ -37,7 +37,7 @@ class SnapshotCache:
     @property
     def meeting_naws_codes(self) -> dict[int, models.MeetingNawsCode]:
         if self._meeting_naws_codes is None:
-            db_naws_codes = crud.get_meeting_naws_codes_by_server(self._db, self._snapshot.root_server_id)
+            db_naws_codes = crud.get_meeting_naws_codes_by_server(self._db, self._snapshot.root_server_id, lock=True)
             db_naws_codes_dict = {db_naws_code.bmlt_id: db_naws_code for db_naws_code in db_naws_codes}
             self._meeting_naws_codes = db_naws_codes_dict
         return self._meeting_naws_codes
@@ -86,7 +86,7 @@ class BmltServiceBody(BaseModel):
         return service_bodies
 
     def to_db(self, db: Session, snapshot: models.Snapshot) -> models.ServiceBody:
-        naws_code = crud.get_service_body_naws_code_by_server(db, snapshot.root_server_id, self.id)
+        naws_code = crud.get_service_body_naws_code_by_server(db, snapshot.root_server_id, self.id, lock=True)
         return models.ServiceBody(
             snapshot_id=snapshot.id,
             bmlt_id=self.id,
@@ -122,7 +122,7 @@ class BmltFormat(BaseModel):
         return formats
 
     def to_db(self, db: Session, snapshot: models.Snapshot) -> models.Format:
-        naws_code = crud.get_format_naws_code_by_server(db, snapshot.root_server_id, self.id)
+        naws_code = crud.get_format_naws_code_by_server(db, snapshot.root_server_id, self.id, lock=True)
         return models.Format(
             snapshot_id=snapshot.id,
             bmlt_id=self.id,
@@ -270,12 +270,6 @@ def get_json(url: str) -> list[Any]:
 
 
 def create_snapshot(db: Session, root_server: models.RootServer):
-    # TODO There may be a race condition here with naws codes. It is possible that if the naws
-    # TODO code for an object is changed during snapshot creation, that the snapshot object
-    # TODO will not be saved with the correct naws code. It might make sense to write a cli
-    # TODO command that fixes the naws codes on all objects. We could run that routinely
-    # TODO for eventual consistency purposes, and also call it after creating each snapshot.
-
     logger.info(f"creating snapshot for {root_server.id}:{root_server.url}...")
     snapshot = crud.create_snapshot(db, root_server)
 
