@@ -118,6 +118,25 @@ def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_
     )
 
 
+def create_service_body_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str) -> Optional[ServiceBodyNawsCode]:
+    naws_code = ServiceBodyNawsCode(root_server_id=root_server_id, bmlt_id=bmlt_id, code=code)
+    db.add(naws_code)
+    try:
+        db.flush()
+    except IntegrityError:
+        return None
+    db.refresh(naws_code)
+    db.query(ServiceBody).filter(ServiceBody.snapshot.has(root_server_id=root_server_id)).update({"service_body_naws_code_id": naws_code.id}, synchronize_session=False)
+    db.flush()
+    return naws_code
+
+
+def delete_service_body_naws_code(db: Session, id: int) -> bool:
+    num_rows = db.query(ServiceBodyNawsCode).filter(ServiceBodyNawsCode.id == id).delete()
+    db.flush()
+    return num_rows != 0
+
+
 # formats
 #
 #
@@ -151,6 +170,25 @@ def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: in
     )
 
 
+def create_format_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str) -> Optional[FormatNawsCode]:
+    naws_code = FormatNawsCode(root_server_id=root_server_id, bmlt_id=bmlt_id, code=code)
+    db.add(naws_code)
+    try:
+        db.flush()
+    except IntegrityError:
+        return None
+    db.refresh(naws_code)
+    db.query(Format).filter(Format.snapshot.has(root_server_id=root_server_id)).update({"format_naws_code_id": naws_code.id}, synchronize_session=False)
+    db.flush()
+    return naws_code
+
+
+def delete_format_naws_code(db: Session, id: int) -> bool:
+    num_rows = db.query(FormatNawsCode).filter(FormatNawsCode.id == id).delete()
+    db.flush()
+    return num_rows != 0
+
+
 # meetings
 #
 #
@@ -173,6 +211,25 @@ def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_i
     query = query.options(selectinload(Meeting.meeting_formats).selectinload(MeetingFormat.format).selectinload(Format.naws_code))
     query = query.options(selectinload(Meeting.service_body).selectinload(ServiceBody.parent).selectinload(ServiceBody.naws_code))
     return query.all()
+
+
+def create_meeting_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str) -> Optional[MeetingNawsCode]:
+    naws_code = MeetingNawsCode(root_server_id=root_server_id, bmlt_id=bmlt_id, code=code)
+    db.add(naws_code)
+    try:
+        db.flush()
+    except IntegrityError:
+        return None
+    db.refresh(naws_code)
+    db.query(Meeting).filter(Meeting.snapshot.has(root_server_id=root_server_id)).update({"meeting_naws_code_id": naws_code.id}, synchronize_session=False)
+    db.flush()
+    return naws_code
+
+
+def delete_meeting_naws_code(db: Session, id: int) -> bool:
+    num_rows = db.query(MeetingNawsCode).filter(MeetingNawsCode.id == id).delete()
+    db.flush()
+    return num_rows != 0
 
 
 # users

@@ -18,8 +18,8 @@ def create_snapshot(db: Session, root_server: models.RootServer) -> models.Snaps
     return crud.create_snapshot(db, root_server)
 
 
-def create_service_body(db: Session, snapshot_id: int, bmlt_id: int) -> models.ServiceBody:
-    return crud.create_service_body(db, snapshot_id, bmlt_id, f"sb name {bmlt_id}", "AS")
+def create_service_body(db: Session, snapshot_id: int, bmlt_id: int, parent_id: int = None) -> models.ServiceBody:
+    return crud.create_service_body(db, snapshot_id, bmlt_id, f"sb name {bmlt_id}", "AS", parent_id=parent_id)
 
 
 def create_format(db: Session, snapshot: models.Snapshot, bmlt_id: int, key_string: str, name: str, world_id: str = None) -> models.Format:
@@ -93,8 +93,18 @@ def sb_1_snap_1(db: Session, snap_1: models.Snapshot) -> models.ServiceBody:
 
 
 @pytest.fixture
+def sb_2_snap_1(db: Session, sb_1_snap_1: models.ServiceBody) -> models.ServiceBody:
+    return create_service_body(db, sb_1_snap_1.snapshot_id, 1, parent_id=sb_1_snap_1.id)
+
+
+@pytest.fixture
 def sb_1_snap_2(db: Session, snap_2: models.Snapshot) -> models.ServiceBody:
     return create_service_body(db, snap_2.id, 1)
+
+
+@pytest.fixture
+def sb_2_snap_2(db: Session, sb_1_snap_2: models.ServiceBody) -> models.ServiceBody:
+    return create_service_body(db, sb_1_snap_2.snapshot_id, 1, parent_id=sb_1_snap_2.id)
 
 
 @pytest.fixture
@@ -341,6 +351,29 @@ def test_diff_meeting_updated_optional_text_fields(db: Session, mtg_1_snap_1, mt
         assert event.changed_fields == [field_name]
 
 
+def test_diff_meeting_naws_code(db: Session, mtg_1_snap_1, mtg_1_snap_2):
+    naws_code = crud.create_meeting_naws_code(db, mtg_1_snap_1.snapshot.root_server_id, mtg_1_snap_1.bmlt_id, "test")
+    mtg_1_snap_1.name = "changed"
+    db.add(mtg_1_snap_1)
+    db.flush()
+    db.refresh(mtg_1_snap_1)
+    db.refresh(mtg_1_snap_2)
+
+    data = Data([mtg_1_snap_1], [mtg_1_snap_2])
+    events = data.diff()
+    event = events[0]
+    assert event.old_meeting.naws_code_override == "test"
+    assert event.new_meeting.naws_code_override == "test"
+
+    crud.delete_meeting_naws_code(db, naws_code.id)
+    db.refresh(mtg_1_snap_1)
+    db.refresh(mtg_1_snap_2)
+    events = data.diff()
+    event = events[0]
+    assert event.old_meeting.naws_code_override is None
+    assert event.new_meeting.naws_code_override is None
+
+
 def test_diff_meeting_updated_format_removed(db: Session, mtg_1_snap_1, mtg_1_snap_2: models.Meeting):
     db.query(models.MeetingFormat).filter(models.MeetingFormat.meeting == mtg_1_snap_2).delete()
     db.refresh(mtg_1_snap_2)
@@ -365,3 +398,170 @@ def test_diff_meeting_updated_format_added(db: Session, mtg_1_snap_1, mtg_1_snap
     assert event.old_meeting.format_bmlt_ids == []
     assert event.new_meeting.format_bmlt_ids == [mtg_1_snap_2.meeting_formats[0].format.bmlt_id]
     assert event.changed_fields == ["format_bmlt_ids"]
+
+
+def test_snapshot_struct_service_body_bmlt_id(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.bmlt_id = 123
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.bmlt_id == 123
+
+
+def test_snapshot_struct_service_body_parent_bmlt_id(sb_1_snap_1: models.ServiceBody, sb_2_snap_1: models.ServiceBody):
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.parent_bmlt_id is None
+
+    sb = structs.ServiceBody.from_db_obj(sb_2_snap_1)
+    assert sb.parent_bmlt_id == sb_1_snap_1.bmlt_id
+
+
+def test_snapshot_struct_service_body_name(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.name = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.name == "changed"
+
+
+def test_snapshot_struct_service_body_type(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.type = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.type == "changed"
+
+
+def test_snapshot_struct_service_body_description(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.description = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.description == "changed"
+
+    sb_1_snap_1.description = None
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.description is None
+
+
+def test_snapshot_struct_service_body_url(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.url = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.url == "changed"
+
+    sb_1_snap_1.url = None
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.url is None
+
+
+def test_snapshot_struct_service_body_helpline(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.helpline = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.helpline == "changed"
+
+    sb_1_snap_1.helpline = None
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.helpline is None
+
+
+def test_snapshot_struct_service_body_world_id(sb_1_snap_1: models.ServiceBody):
+    sb_1_snap_1.world_id = "changed"
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.world_id == "changed"
+
+    sb_1_snap_1.world_id = None
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.world_id is None
+
+
+def test_snapshot_struct_service_body_naws_code(db: Session, sb_1_snap_1: models.ServiceBody):
+    naws_code = crud.create_service_body_naws_code(db, sb_1_snap_1.snapshot.root_server_id, sb_1_snap_1.bmlt_id, "test")
+    db.refresh(sb_1_snap_1)
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.naws_code_override == "test"
+
+    crud.delete_service_body_naws_code(db, naws_code.id)
+    db.refresh(sb_1_snap_1)
+    sb = structs.ServiceBody.from_db_obj(sb_1_snap_1)
+    assert sb.naws_code_override is None
+
+
+def test_snapshot_struct_format_bmlt_id(fmt_123_snap_1: models.Format):
+    fmt_123_snap_1.bmlt_id = 123
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.bmlt_id == 123
+
+
+def test_snapshot_struct_format_key_string(fmt_123_snap_1: models.Format):
+    fmt_123_snap_1.key_string = "changed"
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.key_string == "changed"
+
+
+def test_snapshot_struct_format_name(fmt_123_snap_1: models.Format):
+    fmt_123_snap_1.name = "changed"
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.name == "changed"
+
+    fmt_123_snap_1.name = None
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.name is None
+
+
+def test_snapshot_struct_format_world_id(fmt_123_snap_1: models.Format):
+    fmt_123_snap_1.world_id = "changed"
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.world_id == "changed"
+
+    fmt_123_snap_1.world_id = None
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.world_id is None
+
+
+def test_snapshot_struct_format_naws_code(db: Session, fmt_123_snap_1: models.Format):
+    naws_code = crud.create_format_naws_code(db, fmt_123_snap_1.snapshot.root_server_id, fmt_123_snap_1.bmlt_id, "test")
+    db.refresh(fmt_123_snap_1)
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.naws_code_override == "test"
+
+    crud.delete_format_naws_code(db, naws_code.id)
+    db.refresh(fmt_123_snap_1)
+    fmt = structs.Format.from_db_obj(fmt_123_snap_1)
+    assert fmt.naws_code_override is None
+
+
+def test_create_delete_format_naws_code(db: Session, fmt_123_snap_1: models.Format, fmt_123_snap_2: models.Format):
+    naws_code = crud.create_format_naws_code(db, fmt_123_snap_1.snapshot.root_server_id, fmt_123_snap_1.bmlt_id, "test")
+    assert naws_code.code == "test"
+    db.refresh(fmt_123_snap_1)
+    db.refresh(fmt_123_snap_2)
+    assert fmt_123_snap_1.naws_code == naws_code
+    assert fmt_123_snap_2.naws_code == naws_code
+
+    crud.delete_format_naws_code(db, naws_code.id)
+    db.refresh(fmt_123_snap_1)
+    db.refresh(fmt_123_snap_2)
+    assert fmt_123_snap_1.naws_code is None
+    assert fmt_123_snap_2.naws_code is None
+
+
+def test_create_delete_service_body_naws_code(db: Session, sb_1_snap_1: models.ServiceBody, sb_1_snap_2: models.ServiceBody):
+    naws_code = crud.create_service_body_naws_code(db, sb_1_snap_1.snapshot.root_server_id, sb_1_snap_2.bmlt_id, "test")
+    assert naws_code.code == "test"
+    db.refresh(sb_1_snap_1)
+    db.refresh(sb_1_snap_2)
+    assert sb_1_snap_1.naws_code == naws_code
+    assert sb_1_snap_2.naws_code == naws_code
+
+    crud.delete_service_body_naws_code(db, naws_code.id)
+    db.refresh(sb_1_snap_1)
+    db.refresh(sb_1_snap_2)
+    assert sb_1_snap_1.naws_code is None
+    assert sb_1_snap_2.naws_code is None
+
+
+def test_create_delete_meeting_naws_code(db: Session, mtg_1_snap_1: models.Meeting, mtg_1_snap_2: models.Meeting):
+    naws_code = crud.create_meeting_naws_code(db, mtg_1_snap_1.snapshot.root_server_id, mtg_1_snap_2.bmlt_id, "test")
+    assert naws_code.code == "test"
+    db.refresh(mtg_1_snap_1)
+    db.refresh(mtg_1_snap_2)
+    assert mtg_1_snap_1.naws_code == naws_code
+    assert mtg_1_snap_2.naws_code == naws_code
+
+    crud.delete_meeting_naws_code(db, naws_code.id)
+    db.refresh(mtg_1_snap_1)
+    db.refresh(mtg_1_snap_2)
+    assert mtg_1_snap_1.naws_code is None
+    assert mtg_1_snap_2.naws_code is None

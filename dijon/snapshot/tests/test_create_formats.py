@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dijon import crud
-from dijon.models import Format, FormatNawsCode, RootServer, Snapshot
+from dijon.models import Format, RootServer, Snapshot
 from dijon.snapshot.create import BmltFormat, save_formats
 
 
@@ -160,7 +160,7 @@ def test_bmlt_format_to_db_naws_code(db: Session, snapshot_1: Snapshot):
     db.add(db_format)
     db.flush()
 
-    naws_code = FormatNawsCode(root_server_id=snapshot_1.root_server_id, bmlt_id=bmlt_format.id)
+    naws_code = crud.create_format_naws_code(db, snapshot_1.root_server_id, bmlt_format.id, "test")
     db.add(naws_code)
     db.flush()
     db.refresh(naws_code)
