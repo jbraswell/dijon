@@ -94,7 +94,7 @@ def sb_1_snap_1(db: Session, snap_1: models.Snapshot) -> models.ServiceBody:
 
 @pytest.fixture
 def sb_2_snap_1(db: Session, sb_1_snap_1: models.ServiceBody) -> models.ServiceBody:
-    return create_service_body(db, sb_1_snap_1.snapshot_id, 1, parent_id=sb_1_snap_1.id)
+    return create_service_body(db, sb_1_snap_1.snapshot_id, 2, parent_id=sb_1_snap_1.id)
 
 
 @pytest.fixture
@@ -104,7 +104,7 @@ def sb_1_snap_2(db: Session, snap_2: models.Snapshot) -> models.ServiceBody:
 
 @pytest.fixture
 def sb_2_snap_2(db: Session, sb_1_snap_2: models.ServiceBody) -> models.ServiceBody:
-    return create_service_body(db, sb_1_snap_2.snapshot_id, 1, parent_id=sb_1_snap_2.id)
+    return create_service_body(db, sb_1_snap_2.snapshot_id, 2, parent_id=sb_1_snap_2.id)
 
 
 @pytest.fixture
