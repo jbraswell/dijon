@@ -1024,29 +1024,6 @@ def test_bmlt_meeting_to_db_world_id(db: Session, cache: SnapshotCache, service_
     db.flush()
 
 
-def test_bmlt_meeting_to_db_naws_code(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
-    bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
-
-    db_meeting, _ = bmlt_meeting.to_db(db, cache)
-    bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
-    assert db_meeting.meeting_naws_code_id is None
-
-    naws_code = crud.create_meeting_naws_code(db, cache.snapshot.root_server_id, bmlt_meeting.id_bigint, "test")
-    db.add(naws_code)
-    db.flush()
-    db.refresh(naws_code)
-
-    cache.clear()
-    db_meeting, _ = bmlt_meeting.to_db(db, cache)
-    db.add(db_meeting)
-    db.flush()
-    db.refresh(db_meeting)
-    assert db_meeting.meeting_naws_code_id == naws_code.id
-    assert db_meeting.naws_code == naws_code
-
-
 def test_bmlt_meeting_to_db_meeting_formats(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id

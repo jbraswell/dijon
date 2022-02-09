@@ -58,6 +58,10 @@ def create_snapshot(db: Session, root_server: RootServer) -> Snapshot:
     return snapshot
 
 
+def get_snapshot_by_id(db: Session, snapshot_id: int) -> Optional[Snapshot]:
+    return db.query(Snapshot).filter(Snapshot.id == snapshot_id).first()
+
+
 def get_snapshot_by_date(db: Session, root_server_id: int, date: date) -> Optional[Snapshot]:
     query = db.query(Snapshot)
     query = query.filter(Snapshot.root_server_id == root_server_id)
@@ -110,11 +114,15 @@ def get_service_bodies_by_snapshot(db: Session, snapshot_id: int) -> list[Servic
     return db.query(ServiceBody).filter(snapshot_id == snapshot_id).all()
 
 
-def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int, lock: bool = False) -> Optional[ServiceBodyNawsCode]:
+def get_service_body_naws_codes_by_server(db: Session, root_server_id: int) -> list[ServiceBodyNawsCode]:
+    query = db.query(ServiceBodyNawsCode)
+    query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id)
+    return query.all()
+
+
+def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[ServiceBodyNawsCode]:
     query = db.query(ServiceBodyNawsCode)
     query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id, ServiceBodyNawsCode.bmlt_id == bmlt_id)
-    if lock:
-        query = query.with_for_update()
     return query.first()
 
 
@@ -126,11 +134,6 @@ def create_service_body_naws_code(db: Session, root_server_id: int, bmlt_id: int
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    query = db.query(ServiceBody)
-    query = query.filter(ServiceBody.snapshot.has(root_server_id=root_server_id))
-    query = query.filter(ServiceBody.bmlt_id == bmlt_id)
-    query.update({"service_body_naws_code_id": naws_code.id}, synchronize_session=False)
-    db.flush()
     return naws_code
 
 
@@ -165,11 +168,15 @@ def get_formats_by_bmlt_ids(db: Session, snapshot_id: int, bmlt_ids: list[int]) 
     )
 
 
-def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int, lock: bool = False) -> Optional[FormatNawsCode]:
+def get_format_naws_codes_by_server(db: Session, root_server_id: int) -> list[FormatNawsCode]:
+    query = db.query(FormatNawsCode)
+    query = query.filter(FormatNawsCode.root_server_id == root_server_id)
+    return query.all()
+
+
+def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[FormatNawsCode]:
     query = db.query(FormatNawsCode)
     query = query.filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id)
-    if lock:
-        query = query.with_for_update()
     return query.first()
 
 
@@ -181,11 +188,6 @@ def create_format_naws_code(db: Session, root_server_id: int, bmlt_id: int, code
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    query = db.query(Format)
-    query = query.filter(Format.snapshot.has(root_server_id=root_server_id))
-    query = query.filter(Format.bmlt_id == bmlt_id)
-    query.update({"format_naws_code_id": naws_code.id}, synchronize_session=False)
-    db.flush()
     return naws_code
 
 
@@ -198,11 +200,9 @@ def delete_format_naws_code(db: Session, id: int) -> bool:
 # meetings
 #
 #
-def get_meeting_naws_codes_by_server(db: Session, root_server_id: int, lock: bool = False) -> list[MeetingNawsCode]:
+def get_meeting_naws_codes_by_server(db: Session, root_server_id: int) -> list[MeetingNawsCode]:
     query = db.query(MeetingNawsCode)
     query = query.filter(MeetingNawsCode.root_server_id == root_server_id)
-    if lock:
-        query = query.with_for_update()
     return query.all()
 
 
@@ -210,8 +210,8 @@ def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_i
     query = db.query(Meeting).filter(Meeting.snapshot_id == snapshot_id)
     if service_body_bmlt_ids is not None:
         query = query.join(ServiceBody).filter(ServiceBody.bmlt_id.in_(service_body_bmlt_ids))
-    query = query.options(selectinload(Meeting.meeting_formats).selectinload(MeetingFormat.format).selectinload(Format.naws_code))
-    query = query.options(selectinload(Meeting.service_body).selectinload(ServiceBody.parent).selectinload(ServiceBody.naws_code))
+    query = query.options(selectinload(Meeting.meeting_formats).selectinload(MeetingFormat.format))
+    query = query.options(selectinload(Meeting.service_body).selectinload(ServiceBody.parent))
     return query.all()
 
 
@@ -223,11 +223,6 @@ def create_meeting_naws_code(db: Session, root_server_id: int, bmlt_id: int, cod
     except IntegrityError:
         return None
     db.refresh(naws_code)
-    query = db.query(Meeting)
-    query = query.filter(Meeting.snapshot.has(root_server_id=root_server_id))
-    query = query.filter(Meeting.bmlt_id == bmlt_id)
-    query.update({"meeting_naws_code_id": naws_code.id}, synchronize_session=False)
-    db.flush()
     return naws_code
 
 
