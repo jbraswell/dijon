@@ -10,47 +10,10 @@ from pydantic.validators import str_validator
 from sqlalchemy.orm import Session
 
 from dijon import crud, models
+from dijon.snapshot.cache import SnapshotCache
 
 
 logger = logging.getLogger(__name__)
-
-
-class SnapshotCache:
-    def __init__(self, db: Session, snapshot: models.Snapshot):
-        self._db = db
-        self._snapshot = snapshot
-        self._service_bodies: Optional[dict[int, models.ServiceBody]] = None
-        self._meeting_naws_codes: Optional[dict[int, models.MeetingNawsCode]] = None
-
-    @property
-    def snapshot(self) -> models.Snapshot:
-        return self._snapshot
-
-    @property
-    def service_bodies(self) -> dict[int, models.ServiceBody]:
-        if self._service_bodies is None:
-            db_sbs = crud.get_service_bodies_by_snapshot(self._db, self._snapshot.id)
-            db_sb_dict = {db_sb.bmlt_id: db_sb for db_sb in db_sbs}
-            self._service_bodies = db_sb_dict
-        return self._service_bodies
-
-    @property
-    def meeting_naws_codes(self) -> dict[int, models.MeetingNawsCode]:
-        if self._meeting_naws_codes is None:
-            db_naws_codes = crud.get_meeting_naws_codes_by_server(self._db, self._snapshot.root_server_id, lock=True)
-            db_naws_codes_dict = {db_naws_code.bmlt_id: db_naws_code for db_naws_code in db_naws_codes}
-            self._meeting_naws_codes = db_naws_codes_dict
-        return self._meeting_naws_codes
-
-    def get_service_body(self, bmlt_id: int) -> Optional[models.ServiceBody]:
-        return self.service_bodies.get(bmlt_id)
-
-    def get_meeting_naws_code(self, bmlt_id: int) -> Optional[models.MeetingNawsCode]:
-        return self.meeting_naws_codes.get(bmlt_id)
-
-    def clear(self):
-        self._service_bodies = None
-        self._meeting_naws_codes = None
 
 
 class EmptyToNoneStr(str):
@@ -86,7 +49,6 @@ class BmltServiceBody(BaseModel):
         return service_bodies
 
     def to_db(self, db: Session, snapshot: models.Snapshot) -> models.ServiceBody:
-        naws_code = crud.get_service_body_naws_code_by_server(db, snapshot.root_server_id, self.id, lock=True)
         return models.ServiceBody(
             snapshot_id=snapshot.id,
             bmlt_id=self.id,
@@ -96,8 +58,7 @@ class BmltServiceBody(BaseModel):
             description=self.description,
             url=self.url,
             helpline=self.helpline,
-            world_id=self.world_id,
-            service_body_naws_code_id=naws_code.id if naws_code else None
+            world_id=self.world_id
         )
 
 
@@ -122,14 +83,12 @@ class BmltFormat(BaseModel):
         return formats
 
     def to_db(self, db: Session, snapshot: models.Snapshot) -> models.Format:
-        naws_code = crud.get_format_naws_code_by_server(db, snapshot.root_server_id, self.id, lock=True)
         return models.Format(
             snapshot_id=snapshot.id,
             bmlt_id=self.id,
             key_string=self.key_string,
             name=self.name_string,
-            world_id=self.world_id,
-            format_naws_code_id=naws_code.id if naws_code else None
+            world_id=self.world_id
         )
 
 
@@ -179,7 +138,6 @@ class BmltMeeting(BaseModel):
         return meetings
 
     def to_db(self, db: Session, cache: SnapshotCache) -> tuple[models.Meeting, list[models.MeetingFormat]]:
-        naws_code = cache.get_meeting_naws_code(self.id_bigint)
         service_body = cache.get_service_body(self.service_body_bigint)
         if not service_body:
             raise ValueError("invalid service body")
@@ -194,7 +152,6 @@ class BmltMeeting(BaseModel):
             start_time=self.start_time,
             duration=self.duration_time,
             time_zone=self.time_zone,
-            meeting_naws_code_id=naws_code.id if naws_code else None,
             latitude=self.latitude,
             longitude=self.longitude,
             published=self.published,

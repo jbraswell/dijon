@@ -153,26 +153,6 @@ def test_bmlt_format_to_db_world_id(db: Session, snapshot_1: Snapshot):
     db.flush()
 
 
-def test_bmlt_format_to_db_naws_code(db: Session, snapshot_1: Snapshot):
-    bmlt_format = get_mock_bmlt_format()
-    db_format = bmlt_format.to_db(db, snapshot_1)
-    assert db_format.format_naws_code_id is None
-    db.add(db_format)
-    db.flush()
-
-    naws_code = crud.create_format_naws_code(db, snapshot_1.root_server_id, bmlt_format.id, "test")
-    db.add(naws_code)
-    db.flush()
-    db.refresh(naws_code)
-
-    db_sb = bmlt_format.to_db(db, snapshot_1)
-    db.add(db_sb)
-    db.flush()
-    db.refresh(db_sb)
-    assert db_sb.format_naws_code_id == naws_code.id
-    assert db_sb.naws_code == naws_code
-
-
 def test_save_formats(db: Session, snapshot_1: Snapshot):
     bmlt_format_1 = get_mock_bmlt_format()
     bmlt_format_1.id = 1

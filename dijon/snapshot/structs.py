@@ -6,6 +6,7 @@ from typing import Optional
 from pydantic.dataclasses import dataclass
 
 from dijon import models
+from dijon.snapshot.cache import NawsCodeCache
 
 
 class MeetingEventType(Enum):
@@ -102,7 +103,8 @@ class ServiceBody:
     naws_code_override: Optional[str]
 
     @classmethod
-    def from_db_obj(cls, db_obj: models.ServiceBody) -> "ServiceBody":
+    def from_db_obj(cls, db_obj: models.ServiceBody, cache: NawsCodeCache) -> "ServiceBody":
+        naws_code = cache.get_service_body_naws_code(db_obj.bmlt_id)
         return cls(
             bmlt_id=db_obj.bmlt_id,
             parent_bmlt_id=db_obj.parent.bmlt_id if db_obj.parent else None,
@@ -112,7 +114,7 @@ class ServiceBody:
             url=db_obj.url,
             helpline=db_obj.helpline,
             world_id=db_obj.world_id,
-            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None
+            naws_code_override=naws_code.code if naws_code else None
         )
 
 
@@ -125,13 +127,14 @@ class Format:
     naws_code_override: Optional[str]
 
     @classmethod
-    def from_db_obj(cls, db_obj: models.Format) -> "Format":
+    def from_db_obj(cls, db_obj: models.Format, cache: NawsCodeCache) -> "Format":
+        naws_code = cache.get_format_naws_code(db_obj.bmlt_id)
         return cls(
             bmlt_id=db_obj.bmlt_id,
             key_string=db_obj.key_string,
             name=db_obj.name,
             world_id=db_obj.world_id,
-            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None
+            naws_code_override=naws_code.code if naws_code else None
         )
 
 
@@ -142,11 +145,12 @@ class Meeting(DiffableMeeting):
     formats: list[Format]
 
     @classmethod
-    def from_db_obj_list(cls, db_obj_list: list[models.Meeting]) -> list["Meeting"]:
-        return [cls.from_db_obj(m) for m in db_obj_list]
+    def from_db_obj_list(cls, db_obj_list: list[models.Meeting], cache: NawsCodeCache) -> list["Meeting"]:
+        return [cls.from_db_obj(m, cache) for m in db_obj_list]
 
     @classmethod
-    def from_db_obj(cls, db_obj: models.Meeting) -> "Meeting":
+    def from_db_obj(cls, db_obj: models.Meeting, cache: NawsCodeCache) -> "Meeting":
+        naws_code = cache.get_meeting_naws_code(db_obj.bmlt_id)
         return cls(
             bmlt_id=db_obj.bmlt_id,
             name=db_obj.name,
@@ -177,9 +181,9 @@ class Meeting(DiffableMeeting):
             phone_meeting_number=db_obj.phone_meeting_number,
             virtual_meeting_additional_info=db_obj.virtual_meeting_additional_info,
             format_bmlt_ids=sorted([mf.format.bmlt_id for mf in db_obj.meeting_formats]),
-            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None,
-            service_body=ServiceBody.from_db_obj(db_obj.service_body) if db_obj.service_body else None,
-            formats=[Format.from_db_obj(mf.format) for mf in db_obj.meeting_formats],
+            naws_code_override=naws_code.code if naws_code else None,
+            service_body=ServiceBody.from_db_obj(db_obj.service_body, cache) if db_obj.service_body else None,
+            formats=[Format.from_db_obj(mf.format, cache) for mf in db_obj.meeting_formats],
         )
 
 
