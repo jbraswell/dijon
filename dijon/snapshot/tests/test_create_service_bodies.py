@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dijon import crud
-from dijon.models import RootServer, ServiceBody, ServiceBodyNawsCode, Snapshot
+from dijon.models import RootServer, ServiceBody, Snapshot
 from dijon.snapshot.create import BmltServiceBody, save_service_bodies
 
 
@@ -277,7 +277,7 @@ def test_bmlt_service_body_to_db_naws_code(db: Session, snapshot_1: Snapshot):
     db.add(db_sb)
     db.flush()
 
-    naws_code = ServiceBodyNawsCode(root_server_id=snapshot_1.root_server_id, bmlt_id=bmlt_sb.id)
+    naws_code = crud.create_service_body_naws_code(db, snapshot_1.root_server_id, bmlt_sb.id, "test")
     db.add(naws_code)
     db.flush()
     db.refresh(naws_code)

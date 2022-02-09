@@ -7,15 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dijon import crud
-from dijon.models import (
-    DayOfWeekEnum,
-    Meeting,
-    MeetingNawsCode,
-    RootServer,
-    ServiceBody,
-    Snapshot,
-    VenueTypeEnum,
-)
+from dijon.models import DayOfWeekEnum, Meeting, RootServer, ServiceBody, Snapshot, VenueTypeEnum
 from dijon.snapshot.create import BmltMeeting, SnapshotCache, save_meetings
 
 
@@ -1041,7 +1033,7 @@ def test_bmlt_meeting_to_db_naws_code(db: Session, cache: SnapshotCache, service
     bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
     assert db_meeting.meeting_naws_code_id is None
 
-    naws_code = MeetingNawsCode(root_server_id=cache.snapshot.root_server_id, bmlt_id=bmlt_meeting.id_bigint)
+    naws_code = crud.create_meeting_naws_code(db, cache.snapshot.root_server_id, bmlt_meeting.id_bigint, "test")
     db.add(naws_code)
     db.flush()
     db.refresh(naws_code)

@@ -112,7 +112,7 @@ class ServiceBody:
             url=db_obj.url,
             helpline=db_obj.helpline,
             world_id=db_obj.world_id,
-            naws_code_override=db_obj.naws_code
+            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None
         )
 
 
@@ -131,7 +131,7 @@ class Format:
             key_string=db_obj.key_string,
             name=db_obj.name,
             world_id=db_obj.world_id,
-            naws_code_override=db_obj.naws_code
+            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None
         )
 
 
@@ -177,7 +177,7 @@ class Meeting(DiffableMeeting):
             phone_meeting_number=db_obj.phone_meeting_number,
             virtual_meeting_additional_info=db_obj.virtual_meeting_additional_info,
             format_bmlt_ids=sorted([mf.format.bmlt_id for mf in db_obj.meeting_formats]),
-            naws_code_override=db_obj.naws_code if db_obj.naws_code else None,
+            naws_code_override=db_obj.naws_code.code if db_obj.naws_code else None,
             service_body=ServiceBody.from_db_obj(db_obj.service_body) if db_obj.service_body else None,
             formats=[Format.from_db_obj(mf.format) for mf in db_obj.meeting_formats],
         )

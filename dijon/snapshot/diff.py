@@ -92,9 +92,6 @@ class Data:
 
 
 def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[structs.MeetingEvent]:
-    # TODO test naws_code_override
-    # TODO test all service_body fields
-    # TODO test all formats fields
     old = crud.get_meetings_for_snapshot(db, old_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     new = crud.get_meetings_for_snapshot(db, new_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     data = Data(old, new)

@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     Time,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -43,6 +44,11 @@ class ServiceBodyNawsCode(Base):
     root_server_id = Column(ForeignKey("root_servers.id", ondelete="CASCADE"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
+    code = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint(root_server_id, bmlt_id),)
 
 
 class ServiceBody(Base):
@@ -60,7 +66,7 @@ class ServiceBody(Base):
     url = Column(String(255), nullable=True)
     helpline = Column(String(255), nullable=True)
     world_id = Column(String(20), nullable=True)
-    service_body_naws_code_id = Column(ForeignKey("service_body_naws_codes.id"), nullable=True)
+    service_body_naws_code_id = Column(ForeignKey("service_body_naws_codes.id", ondelete="SET NULL"), nullable=True)
     naws_code = relationship("ServiceBodyNawsCode", uselist=False)
     meetings = relationship("Meeting", back_populates="service_body", cascade="all, delete")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -74,6 +80,11 @@ class FormatNawsCode(Base):
     root_server_id = Column(ForeignKey("root_servers.id", ondelete="CASCADE"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
+    code = Column(String(20), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint(root_server_id, bmlt_id),)
 
 
 class Format(Base):
@@ -86,7 +97,7 @@ class Format(Base):
     key_string = Column(String(255), nullable=False)
     name = Column(String(255), nullable=True)
     world_id = Column(String(20), nullable=True)
-    format_naws_code_id = Column(ForeignKey("format_naws_codes.id"), nullable=True)
+    format_naws_code_id = Column(ForeignKey("format_naws_codes.id", ondelete="SET NULL"), nullable=True)
     naws_code = relationship("FormatNawsCode", uselist=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -99,8 +110,11 @@ class MeetingNawsCode(Base):
     root_server_id = Column(ForeignKey("root_servers.id", ondelete="CASCADE"), nullable=False)
     root_server = relationship("RootServer", uselist=False)
     bmlt_id = Column(Integer, nullable=False)
+    code = Column(String(20), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint(root_server_id, bmlt_id),)
 
 
 class Meeting(Base):
@@ -123,7 +137,7 @@ class Meeting(Base):
     published = Column(Boolean, nullable=False)
     world_id = Column(String(20), nullable=True)
     meeting_formats = relationship("MeetingFormat", back_populates="meeting", cascade="all, delete", passive_deletes=True)
-    meeting_naws_code_id = Column(ForeignKey("meeting_naws_codes.id"), nullable=True)
+    meeting_naws_code_id = Column(ForeignKey("meeting_naws_codes.id", ondelete="SET NULL"), nullable=True)
     naws_code = relationship("MeetingNawsCode", uselist=False)
     location_text = Column(Text, nullable=True)
     location_info = Column(Text, nullable=True)
