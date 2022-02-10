@@ -75,7 +75,7 @@ def list_meetings(
     return snapshot.get_meetings(ctx.db, snap.id, service_body_bmlt_ids)
 
 
-@router.get("/rootservers/{root_server_id}/changes/meetings", response_model=schemas.MeetingChangesResponse, status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/meetings/changes", response_model=schemas.MeetingChangesResponse, status_code=HTTP_200_OK)
 def list_meeting_changes(
     root_server_id: int,
     start_date: date,
@@ -107,7 +107,7 @@ def list_meeting_changes(
     )
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/meetings", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/meetings/nawscodes", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
 def list_meeting_naws_codes(root_server_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -116,7 +116,7 @@ def list_meeting_naws_codes(root_server_id: int, ctx: Context = Depends()):
     return crud.get_meeting_naws_codes_by_server(ctx.db, root_server_id)
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/formats", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/formats/nawscodes", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
 def list_format_naws_codes(root_server_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -125,7 +125,7 @@ def list_format_naws_codes(root_server_id: int, ctx: Context = Depends()):
     return crud.get_format_naws_codes_by_server(ctx.db, root_server_id)
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/servicebodies", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/servicebodies/nawscodes", response_model=list[schemas.NawsCode], status_code=HTTP_200_OK)
 def list_service_body_naws_codes(root_server_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -134,7 +134,7 @@ def list_service_body_naws_codes(root_server_id: int, ctx: Context = Depends()):
     return crud.get_service_body_naws_codes_by_server(ctx.db, root_server_id)
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/meetings/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/meetings/nawscodes/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
 def get_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -146,7 +146,7 @@ def get_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depe
     return naws_code
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/formats/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/formats/nawscodes/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
 def get_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -158,7 +158,7 @@ def get_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depen
     return naws_code
 
 
-@router.get("/rootservers/{root_server_id}/nawscodes/servicebodies/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
+@router.get("/rootservers/{root_server_id}/servicebodies/nawscodes/{bmlt_id}", response_model=schemas.NawsCode, status_code=HTTP_200_OK)
 def get_service_body_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -170,7 +170,7 @@ def get_service_body_naws_code(root_server_id: int, bmlt_id: int, ctx: Context =
     return naws_code
 
 
-@router.post("/rootservers/{root_server_id}/nawscodes/meetings", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
+@router.post("/rootservers/{root_server_id}/meetings/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_meeting_naws_code(root_server_id: int, naws_code: schemas.NawsCode, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -182,7 +182,7 @@ def create_meeting_naws_code(root_server_id: int, naws_code: schemas.NawsCode, c
     return db_naws_code
 
 
-@router.post("/rootservers/{root_server_id}/nawscodes/formats", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
+@router.post("/rootservers/{root_server_id}/formats/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_format_naws_code(root_server_id: int, naws_code: schemas.NawsCode, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -194,7 +194,7 @@ def create_format_naws_code(root_server_id: int, naws_code: schemas.NawsCode, ct
     return db_naws_code
 
 
-@router.post("/rootservers/{root_server_id}/nawscodes/servicebodies", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
+@router.post("/rootservers/{root_server_id}/servicebodies/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_service_body_naws_code(root_server_id: int, naws_code: schemas.NawsCode, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -206,7 +206,7 @@ def create_service_body_naws_code(root_server_id: int, naws_code: schemas.NawsCo
     return db_naws_code
 
 
-@router.delete("/rootservers/{root_server_id}/nawscodes/meetings/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
+@router.delete("/rootservers/{root_server_id}/meetings/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -216,7 +216,7 @@ def delete_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = D
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
 
 
-@router.delete("/rootservers/{root_server_id}/nawscodes/formats/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
+@router.delete("/rootservers/{root_server_id}/formats/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
@@ -226,7 +226,7 @@ def delete_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = De
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
 
 
-@router.delete("/rootservers/{root_server_id}/nawscodes/servicebodies/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
+@router.delete("/rootservers/{root_server_id}/servicebodies/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_service_body_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
     # TODO write tests
     if not ctx.is_authenticated:
