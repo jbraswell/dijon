@@ -78,7 +78,7 @@ def get_snapshot(root_server_id: int, date: date, ctx: Context = Depends()):
 
 
 @router.get("/rootservers/{root_server_id}/snapshots/{date}/meetings", response_model=list[structs.Meeting], status_code=HTTP_200_OK)
-def list_meetings(
+def list_snapshot_meetings(
     root_server_id: int,
     date: date,
     service_body_bmlt_ids: Optional[list[int]] = Query(None),
@@ -93,7 +93,7 @@ def list_meetings(
 
 
 @router.get("/rootservers/{root_server_id}/snapshots/{date}/formats", response_model=list[structs.Format], status_code=HTTP_200_OK)
-def list_formats(
+def list_snapshot_formats(
     root_server_id: int,
     date: date,
     ctx: Context = Depends()
@@ -107,7 +107,7 @@ def list_formats(
 
 
 @router.get("/rootservers/{root_server_id}/snapshots/{date}/servicebodies", response_model=list[structs.ServiceBody], status_code=HTTP_200_OK)
-def list_service_bodies(
+def list_snapshot_service_bodies(
     root_server_id: int,
     date: date,
     ctx: Context = Depends()
