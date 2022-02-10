@@ -19,7 +19,7 @@ def get_db_url():
     return f"mysql+mysqlconnector://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
 
-engine = create_engine(get_db_url())
+engine = create_engine(get_db_url(), pool_recycle=1800)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
