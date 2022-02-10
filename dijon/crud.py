@@ -78,6 +78,10 @@ def get_nearest_snapshot_by_date(db: Session, root_server_id: int, search_date: 
     return query.first()
 
 
+def get_snapshots(db: Session, root_server_id: int) -> list[Snapshot]:
+    return db.query(Snapshot).filter(Snapshot.root_server_id == root_server_id).order_by(Snapshot.created_at).all()
+
+
 # service bodies
 #
 #

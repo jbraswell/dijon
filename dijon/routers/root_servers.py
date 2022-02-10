@@ -54,6 +54,29 @@ def delete_root_server(root_server_id: int, ctx: Context = Depends()):
         raise HTTPException(status_code=HTTP_404_NOT_FOUND)
 
 
+@router.get("/rootservers/{root_server_id}/snapshots", response_model=list[schemas.Snapshot], status_code=HTTP_200_OK)
+def list_snapshots(root_server_id: int, ctx: Context = Depends()):
+    # TODO write tests
+    snapshots = []
+    last = None  # use this to make sure we only return the latest snapshot for each day
+    for db_snapshot in crud.get_snapshots(ctx.db, root_server_id):
+        snapshot = schemas.Snapshot(date=db_snapshot.created_at.date())
+        if last and snapshot.date == last.date:
+            snapshots.pop()
+        snapshots.append(snapshot)
+        last = snapshot
+    return snapshots
+
+
+@router.get("/rootservers/{root_server_id}/snapshots/{date}", response_model=schemas.Snapshot, status_code=HTTP_200_OK)
+def get_snapshot(root_server_id: int, date: date, ctx: Context = Depends()):
+    # TODO write tests
+    db_snapshot = crud.get_snapshot_by_date(ctx.db, root_server_id, date)
+    if not db_snapshot:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+    return schemas.Snapshot(date=db_snapshot.created_at.date())
+
+
 @router.get("/rootservers/{root_server_id}/snapshots/{date}/meetings", response_model=list[structs.Meeting], status_code=HTTP_200_OK)
 def list_meetings(
     root_server_id: int,
