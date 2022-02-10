@@ -20,7 +20,7 @@ class SnapshotCache:
     @property
     def service_bodies(self) -> dict[int, models.ServiceBody]:
         if self._service_bodies is None:
-            db_sbs = crud.get_service_bodies_by_snapshot(self._db, self._snapshot.id)
+            db_sbs = crud.get_service_bodies_for_snapshot(self._db, self._snapshot.id)
             db_sb_dict = {db_sb.bmlt_id: db_sb for db_sb in db_sbs}
             self._service_bodies = db_sb_dict
         return self._service_bodies

@@ -110,8 +110,8 @@ def create_service_body(
     return service_body
 
 
-def get_service_bodies_by_snapshot(db: Session, snapshot_id: int) -> list[ServiceBody]:
-    return db.query(ServiceBody).filter(snapshot_id == snapshot_id).all()
+def get_service_bodies_for_snapshot(db: Session, snapshot_id: int) -> list[ServiceBody]:
+    return db.query(ServiceBody).filter(ServiceBody.snapshot_id == snapshot_id).all()
 
 
 def get_service_body_naws_codes_by_server(db: Session, root_server_id: int) -> list[ServiceBodyNawsCode]:
@@ -172,6 +172,10 @@ def get_formats_by_bmlt_ids(db: Session, snapshot_id: int, bmlt_ids: list[int]) 
           .filter(Format.snapshot_id == snapshot_id, Format.bmlt_id.in_(bmlt_ids))
           .all()
     )
+
+
+def get_formats_for_snapshot(db: Session, snapshot_id: int) -> list[Format]:
+    return db.query(Format).filter(Format.snapshot_id == snapshot_id).all()
 
 
 def get_format_naws_codes_by_server(db: Session, root_server_id: int) -> list[FormatNawsCode]:

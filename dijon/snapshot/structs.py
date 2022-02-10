@@ -103,6 +103,10 @@ class ServiceBody:
     naws_code_override: Optional[str]
 
     @classmethod
+    def from_db_obj_list(cls, db_obj_list: list[models.ServiceBody], cache: NawsCodeCache) -> list["ServiceBody"]:
+        return [cls.from_db_obj(s, cache) for s in db_obj_list]
+
+    @classmethod
     def from_db_obj(cls, db_obj: models.ServiceBody, cache: NawsCodeCache) -> "ServiceBody":
         naws_code = cache.get_service_body_naws_code(db_obj.bmlt_id)
         return cls(
@@ -125,6 +129,10 @@ class Format:
     name: Optional[str]
     world_id: Optional[str]
     naws_code_override: Optional[str]
+
+    @classmethod
+    def from_db_obj_list(cls, db_obj_list: list[models.Format], cache: NawsCodeCache) -> list["Format"]:
+        return [cls.from_db_obj(f, cache) for f in db_obj_list]
 
     @classmethod
     def from_db_obj(cls, db_obj: models.Format, cache: NawsCodeCache) -> "Format":
