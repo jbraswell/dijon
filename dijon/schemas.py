@@ -89,3 +89,13 @@ class NawsCode(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# Snapshots
+#
+#
+class Snapshot(BaseModel):
+    date: date
+
+    class Config:
+        orm_mode = True
