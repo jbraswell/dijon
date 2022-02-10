@@ -120,7 +120,7 @@ def get_service_body_naws_codes_by_server(db: Session, root_server_id: int) -> l
     return query.all()
 
 
-def get_service_body_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[ServiceBodyNawsCode]:
+def get_service_body_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> Optional[ServiceBodyNawsCode]:
     query = db.query(ServiceBodyNawsCode)
     query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id, ServiceBodyNawsCode.bmlt_id == bmlt_id)
     return query.first()
@@ -139,6 +139,12 @@ def create_service_body_naws_code(db: Session, root_server_id: int, bmlt_id: int
 
 def delete_service_body_naws_code(db: Session, id: int) -> bool:
     num_rows = db.query(ServiceBodyNawsCode).filter(ServiceBodyNawsCode.id == id).delete()
+    db.flush()
+    return num_rows != 0
+
+
+def delete_service_body_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> bool:
+    num_rows = db.query(ServiceBodyNawsCode).filter(ServiceBodyNawsCode.root_server_id == root_server_id, ServiceBodyNawsCode.bmlt_id == bmlt_id).delete()
     db.flush()
     return num_rows != 0
 
@@ -174,7 +180,7 @@ def get_format_naws_codes_by_server(db: Session, root_server_id: int) -> list[Fo
     return query.all()
 
 
-def get_format_naws_code_by_server(db: Session, root_server_id: int, bmlt_id: int) -> Optional[FormatNawsCode]:
+def get_format_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> Optional[FormatNawsCode]:
     query = db.query(FormatNawsCode)
     query = query.filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id)
     return query.first()
@@ -197,6 +203,12 @@ def delete_format_naws_code(db: Session, id: int) -> bool:
     return num_rows != 0
 
 
+def delete_format_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> bool:
+    num_rows = db.query(FormatNawsCode).filter(FormatNawsCode.root_server_id == root_server_id, FormatNawsCode.bmlt_id == bmlt_id).delete()
+    db.flush()
+    return num_rows != 0
+
+
 # meetings
 #
 #
@@ -204,6 +216,12 @@ def get_meeting_naws_codes_by_server(db: Session, root_server_id: int) -> list[M
     query = db.query(MeetingNawsCode)
     query = query.filter(MeetingNawsCode.root_server_id == root_server_id)
     return query.all()
+
+
+def get_meeting_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> Optional[MeetingNawsCode]:
+    query = db.query(MeetingNawsCode)
+    query = query.filter(MeetingNawsCode.root_server_id == root_server_id, MeetingNawsCode.bmlt_id == bmlt_id)
+    return query.first()
 
 
 def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[Meeting]:
@@ -232,6 +250,12 @@ def delete_meeting_naws_code(db: Session, id: int) -> bool:
     return num_rows != 0
 
 
+def delete_meeting_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: int) -> bool:
+    num_rows = db.query(MeetingNawsCode).filter(MeetingNawsCode.root_server_id == root_server_id, MeetingNawsCode.bmlt_id == bmlt_id).delete()
+    db.flush()
+    return num_rows != 0
+
+
 # users
 #
 #
@@ -253,10 +277,8 @@ def create_default_admin_user(db: Session) -> tuple[User, bool]:
     db_user = get_user_by_username(db, settings.ADMIN_USERNAME)
     if db_user is None:
         db_user = create_user(db, settings.ADMIN_USERNAME, settings.ADMIN_EMAIL, settings.ADMIN_PASSWORD, is_admin=True)
-        print(f"Created admin user '{settings.ADMIN_USERNAME}'")
         return db_user, True
     else:
-        print(f"Admin user '{settings.ADMIN_USERNAME}' already exists")
         return db_user, False
 
 

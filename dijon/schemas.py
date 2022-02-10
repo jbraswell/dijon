@@ -78,3 +78,14 @@ class MeetingChangesResponse(BaseModel):
     start_date: date
     end_date: date
     events: list[structs.MeetingEvent]
+
+
+# NawsCodes
+#
+#
+class NawsCode(BaseModel):
+    bmlt_id: int
+    code: str
+
+    class Config:
+        orm_mode = True

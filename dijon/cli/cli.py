@@ -20,7 +20,7 @@ def create_admin_user():
     with database.db_context() as db:
         db_user, created = crud.create_default_admin_user(db)
         if created:
-            print(f"Admin user '{db_user.username}' already exists")
+            print(f"Created admin user '{db_user.username}'")
         else:
             print(f"Default admin user '{db_user.username}' already exists")
 
