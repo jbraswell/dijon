@@ -95,6 +95,7 @@ class NawsCode(BaseModel):
 #
 #
 class Snapshot(BaseModel):
+    root_server_id: int
     date: date
 
     class Config:
