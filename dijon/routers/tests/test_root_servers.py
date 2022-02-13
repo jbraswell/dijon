@@ -1,11 +1,12 @@
 import pytest
+from sqlalchemy.orm import Session
 
 from dijon import crud, schemas
 from dijon.conftest import Ctx
 
 
 @pytest.fixture
-def headers(admin_access_token: str) -> dict[str, str]:
+def headers(db: Session, admin_access_token: str) -> dict[str, str]:
     headers = {"Authorization": f"bearer {admin_access_token}"}
     return headers
 
