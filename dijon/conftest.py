@@ -48,7 +48,7 @@ _access_token = None
 
 
 @pytest.fixture(scope="session")
-def admin_access_token():
+def admin_access_token(engine):
     return _access_token
 
 

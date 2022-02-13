@@ -71,7 +71,6 @@ def get_service_body_naws_code(root_server_id: int, bmlt_id: int, ctx: Context =
 
 @router.post("/rootservers/{root_server_id}/meetings/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_meeting_naws_code(root_server_id: int, naws_code: schemas.NawsCodeCreate, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
@@ -83,7 +82,6 @@ def create_meeting_naws_code(root_server_id: int, naws_code: schemas.NawsCodeCre
 
 @router.post("/rootservers/{root_server_id}/formats/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_format_naws_code(root_server_id: int, naws_code: schemas.NawsCodeCreate, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
@@ -95,7 +93,6 @@ def create_format_naws_code(root_server_id: int, naws_code: schemas.NawsCodeCrea
 
 @router.post("/rootservers/{root_server_id}/servicebodies/nawscodes", response_model=schemas.NawsCode, status_code=HTTP_201_CREATED)
 def create_service_body_naws_code(root_server_id: int, naws_code: schemas.NawsCodeCreate, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
@@ -107,7 +104,6 @@ def create_service_body_naws_code(root_server_id: int, naws_code: schemas.NawsCo
 
 @router.delete("/rootservers/{root_server_id}/meetings/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
@@ -117,7 +113,6 @@ def delete_meeting_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = D
 
 @router.delete("/rootservers/{root_server_id}/formats/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
@@ -127,7 +122,6 @@ def delete_format_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = De
 
 @router.delete("/rootservers/{root_server_id}/servicebodies/nawscodes/{bmlt_id}", response_class=Response, status_code=HTTP_204_NO_CONTENT)
 def delete_service_body_naws_code(root_server_id: int, bmlt_id: int, ctx: Context = Depends()):
-    # TODO write tests
     if not ctx.is_authenticated:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
 
