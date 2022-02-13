@@ -83,9 +83,16 @@ class MeetingChangesResponse(BaseModel):
 # NawsCodes
 #
 #
-class NawsCode(BaseModel):
+class NawsCodeCreate(BaseModel):
     bmlt_id: int
     code: str
+
+    class Config:
+        orm_mode = True
+
+
+class NawsCode(NawsCodeCreate):
+    root_server_id: int
 
     class Config:
         orm_mode = True

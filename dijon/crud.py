@@ -121,9 +121,10 @@ def get_service_bodies_for_snapshot(db: Session, snapshot_id: int) -> list[Servi
     return db.query(ServiceBody).filter(ServiceBody.snapshot_id == snapshot_id).all()
 
 
-def get_service_body_naws_codes_by_server(db: Session, root_server_id: int) -> list[ServiceBodyNawsCode]:
+def get_service_body_naws_codes(db: Session, root_server_id: int = None) -> list[ServiceBodyNawsCode]:
     query = db.query(ServiceBodyNawsCode)
-    query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id)
+    if root_server_id is not None:
+        query = query.filter(ServiceBodyNawsCode.root_server_id == root_server_id)
     return query.all()
 
 
@@ -185,9 +186,10 @@ def get_formats_for_snapshot(db: Session, snapshot_id: int) -> list[Format]:
     return db.query(Format).filter(Format.snapshot_id == snapshot_id).all()
 
 
-def get_format_naws_codes_by_server(db: Session, root_server_id: int) -> list[FormatNawsCode]:
+def get_format_naws_codes(db: Session, root_server_id: int = None) -> list[FormatNawsCode]:
     query = db.query(FormatNawsCode)
-    query = query.filter(FormatNawsCode.root_server_id == root_server_id)
+    if root_server_id is not None:
+        query = query.filter(FormatNawsCode.root_server_id == root_server_id)
     return query.all()
 
 
@@ -223,9 +225,10 @@ def delete_format_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id
 # meetings
 #
 #
-def get_meeting_naws_codes_by_server(db: Session, root_server_id: int) -> list[MeetingNawsCode]:
+def get_meeting_naws_codes(db: Session, root_server_id: int = None) -> list[MeetingNawsCode]:
     query = db.query(MeetingNawsCode)
-    query = query.filter(MeetingNawsCode.root_server_id == root_server_id)
+    if root_server_id is not None:
+        query = query.filter(MeetingNawsCode.root_server_id == root_server_id)
     return query.all()
 
 
