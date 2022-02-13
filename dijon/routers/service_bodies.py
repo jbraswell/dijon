@@ -17,7 +17,6 @@ def list_snapshot_service_bodies(
     date: date,
     ctx: Context = Depends()
 ):
-    # TODO write tests
     snap = crud.get_snapshot_by_date(ctx.db, root_server_id, date)
     if not snap:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="No snapshots found on date")
