@@ -47,21 +47,21 @@ class NawsCodeCache:
     @property
     def meeting_naws_codes(self) -> dict[int, models.MeetingNawsCode]:
         if self._meeting_naws_codes is None:
-            naws_codes = crud.get_meeting_naws_codes_by_server(self._db, self._root_server.id)
+            naws_codes = crud.get_meeting_naws_codes(self._db, root_server_id=self._root_server.id)
             self._meeting_naws_codes = {nc.bmlt_id: nc for nc in naws_codes}
         return self._meeting_naws_codes
 
     @property
     def service_body_naws_codes(self) -> dict[int, models.ServiceBodyNawsCode]:
         if self._service_body_naws_codes is None:
-            naws_codes = crud.get_service_body_naws_codes_by_server(self._db, self._root_server.id)
+            naws_codes = crud.get_service_body_naws_codes(self._db, root_server_id=self._root_server.id)
             self._service_body_naws_codes = {nc.bmlt_id: nc for nc in naws_codes}
         return self._service_body_naws_codes
 
     @property
     def format_naws_codes(self) -> dict[int, models.FormatNawsCode]:
         if self._format_naws_codes is None:
-            naws_codes = crud.get_format_naws_codes_by_server(self._db, self._root_server.id)
+            naws_codes = crud.get_format_naws_codes(self._db, root_server_id=self._root_server.id)
             self._format_naws_codes = {nc.bmlt_id: nc for nc in naws_codes}
         return self._format_naws_codes
 
