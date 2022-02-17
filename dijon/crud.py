@@ -63,9 +63,10 @@ def get_snapshot_by_id(db: Session, snapshot_id: int) -> Optional[Snapshot]:
 
 
 def get_snapshot_by_date(db: Session, root_server_id: int, date: date) -> Optional[Snapshot]:
+    dt = datetime.fromordinal(date.toordinal())
     query = db.query(Snapshot)
     query = query.filter(Snapshot.root_server_id == root_server_id)
-    query = query.filter(Snapshot.created_at > date - timedelta(days=1), Snapshot.created_at < date + timedelta(days=1))
+    query = query.filter(Snapshot.created_at >= dt, Snapshot.created_at < dt + timedelta(days=1))
     query = query.order_by(desc(Snapshot.created_at))
     return query.first()
 

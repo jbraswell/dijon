@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from datetime import datetime
 
 import alembic.config
 import click
@@ -57,6 +58,11 @@ def run_snapshot(root_server_id: int):
             root_servers = crud.get_root_servers(db)
 
         for root_server in root_servers:
+            snap = crud.get_snapshot_by_date(db, root_server.id, datetime.utcnow().date())
+            if snap is not None:
+                logger.info(f"skipping snapshot for {root_server.id}:{root_server.url}")
+                continue
+
             try:
                 snapshot.create(db, root_server)
             except Exception:
