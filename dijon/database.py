@@ -1,8 +1,9 @@
 from contextlib import contextmanager
+from typing import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from dijon.settings import settings
 
@@ -24,7 +25,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @contextmanager
-def db_context():
+def db_context() -> Generator[Session, None, None]:
     session = SessionLocal()
     try:
         yield session
