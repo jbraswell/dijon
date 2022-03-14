@@ -93,9 +93,21 @@ class Data:
         return events
 
 
+def get_child_service_body_bmlt_ids(db: Session, snapshot_id: int, parent_bmlt_ids: list[int]) -> list[int]:
+    ret = list(parent_bmlt_ids)
+    all_service_bodies = crud.get_service_bodies_for_snapshot(db, snapshot_id)
+    children = [sb for sb in all_service_bodies if sb.bmlt_id in parent_bmlt_ids]
+    while children:
+        children = [sb for sb in all_service_bodies if sb.parent in children and sb.bmlt_id not in ret]
+        ret.extend([c.bmlt_id for c in children])
+    return ret
+
+
 def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[structs.MeetingEvent]:
     snap = crud.get_snapshot_by_id(db, old_snapshot_id)
     cache = NawsCodeCache(db, snap.root_server)
+    if service_body_bmlt_ids is not None:
+        service_body_bmlt_ids = get_child_service_body_bmlt_ids(db, old_snapshot_id, service_body_bmlt_ids)
     old = crud.get_meetings_for_snapshot(db, old_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     new = crud.get_meetings_for_snapshot(db, new_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     data = Data(old, new, cache)

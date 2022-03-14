@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from dijon import crud, models
 from dijon.snapshot import structs
 from dijon.snapshot.cache import NawsCodeCache
-from dijon.snapshot.diff import Data, diff_snapshots
+from dijon.snapshot.diff import Data, diff_snapshots, get_child_service_body_bmlt_ids
 
 
 def create_root_server(db: Session) -> models.RootServer:
@@ -520,3 +520,44 @@ def test_snapshot_struct_format_naws_code(db: Session, fmt_123_snap_1: models.Fo
     cache.clear()
     fmt = structs.Format.from_db_obj(fmt_123_snap_1, cache)
     assert fmt.naws_code_override is None
+
+
+def test_get_child_service_body_bmlt_ids(db: Session, snap_1: models.Snapshot):
+    sb_1 = create_service_body(db, snap_1.id, 1)
+    sb_1_1 = create_service_body(db, snap_1.id, 2, sb_1.id)
+    sb_1_1_1 = create_service_body(db, snap_1.id, 3, sb_1_1.id)
+    sb_1_2 = create_service_body(db, snap_1.id, 4, sb_1.id)
+    sb_2 = create_service_body(db, snap_1.id, 5)
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
+    assert len(child_bmlt_ids) == 4
+    assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_1_1.bmlt_id, sb_1_1_1.bmlt_id, sb_1_2.bmlt_id])
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1.bmlt_id])
+    assert len(child_bmlt_ids) == 2
+    assert sorted(child_bmlt_ids) == sorted([sb_1_1.bmlt_id, sb_1_1_1.bmlt_id])
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1_1.bmlt_id])
+    assert len(child_bmlt_ids) == 1
+    assert sorted(child_bmlt_ids) == sorted([sb_1_1_1.bmlt_id])
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
+    assert len(child_bmlt_ids) == 1
+    assert sorted(child_bmlt_ids) == sorted([sb_2.bmlt_id])
+
+
+def test_get_child_service_body_bmlt_ids_circular(db: Session, snap_1: models.Snapshot):
+    sb_1 = create_service_body(db, snap_1.id, 1)
+    sb_2 = create_service_body(db, snap_1.id, 5, sb_1.id)
+    sb_1.parent_id = sb_2.id
+    db.add(sb_1)
+    db.flush()
+    db.refresh(sb_1)
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
+    assert len(child_bmlt_ids) == 2
+    assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_2.bmlt_id])
+
+    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
+    assert len(child_bmlt_ids) == 2
+    assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_2.bmlt_id])
