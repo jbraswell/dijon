@@ -107,7 +107,12 @@ def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, serv
     snap = crud.get_snapshot_by_id(db, old_snapshot_id)
     cache = NawsCodeCache(db, snap.root_server)
     if service_body_bmlt_ids is not None:
-        service_body_bmlt_ids = get_child_service_body_bmlt_ids(db, old_snapshot_id, service_body_bmlt_ids)
+        unique = set()
+        for bmlt_id in get_child_service_body_bmlt_ids(db, old_snapshot_id, service_body_bmlt_ids):
+            unique.add(bmlt_id)
+        for bmlt_id in get_child_service_body_bmlt_ids(db, new_snapshot_id, service_body_bmlt_ids):
+            unique.add(bmlt_id)
+        service_body_bmlt_ids = list(unique)
     old = crud.get_meetings_for_snapshot(db, old_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     new = crud.get_meetings_for_snapshot(db, new_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     data = Data(old, new, cache)
