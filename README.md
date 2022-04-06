@@ -35,6 +35,7 @@ docker run -d \
 To connect to the database with mysql cli
 ```
 docker run -it --rm --network host mariadb mysql --host=0.0.0.0 --user=dijon --password=dijon dijon
+docker run -it --rm --network host mariadb mysql --host=0.0.0.0 --user=root --password=dijon dijon
 ```
 
 To restore a database dump locally

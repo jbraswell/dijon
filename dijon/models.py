@@ -149,6 +149,7 @@ class Meeting(Base):
     virtual_meeting_link = Column(Text, nullable=True)
     phone_meeting_number = Column(Text, nullable=True)
     virtual_meeting_additional_info = Column(Text, nullable=True)
+    last_changed = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

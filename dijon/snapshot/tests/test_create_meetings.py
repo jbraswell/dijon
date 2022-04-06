@@ -1,14 +1,74 @@
 
-from datetime import time, timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dijon import crud
-from dijon.models import DayOfWeekEnum, Meeting, RootServer, ServiceBody, Snapshot, VenueTypeEnum
-from dijon.snapshot.create import BmltMeeting, SnapshotCache, save_meetings
+from dijon.models import (
+    DayOfWeekEnum,
+    Format,
+    Meeting,
+    MeetingFormat,
+    RootServer,
+    ServiceBody,
+    Snapshot,
+    VenueTypeEnum,
+)
+from dijon.snapshot.create import (
+    BmltMeeting,
+    SnapshotCache,
+    save_meetings,
+    update_meetings_last_changed,
+)
+
+
+def get_meeting_kwargs(snapshot: Snapshot = None, service_body: ServiceBody = None, bmlt_id: int = None) -> dict[str, Any]:
+    return {
+        "bmlt_id": bmlt_id,
+        "snapshot_id": snapshot.id,
+        "name": "meeting name",
+        "day": DayOfWeekEnum.MONDAY,
+        "service_body_id": service_body.id,
+        "venue_type": VenueTypeEnum.IN_PERSON,
+        "start_time": time(hour=12),
+        "duration": timedelta(hours=1),
+        "time_zone": "America/New_York",
+        "latitude": Decimal("-82.8381874"),
+        "longitude": Decimal("-82.8381874"),
+        "published": True,
+        "world_id": "worldid",
+        "location_text": "a really nice string",
+        "location_info": "a really nice string",
+        "location_street": "a really nice string",
+        "location_city_subsection": "a really nice string",
+        "location_neighborhood": "a really nice string",
+        "location_municipality": "a really nice string",
+        "location_sub_province": "a really nice string",
+        "location_province": "a really nice string",
+        "location_postal_code_1": "a really nice string",
+        "location_nation": "a really nice string",
+        "train_lines": "a really nice string",
+        "bus_lines": "a really nice string",
+        "comments": "a really nice string",
+        "virtual_meeting_link": "a really nice string",
+        "phone_meeting_number": "a really nice string",
+        "virtual_meeting_additional_info": "a really nice string",
+    }
+
+
+def create_meeting(db: Session, formats: list[Format], **kwargs):
+    db_meeting = Meeting(**kwargs)
+    db.add(db_meeting)
+    for format in formats:
+        db_meeting_format = MeetingFormat(meeting=db_meeting, format=format)
+        db.add(db_meeting_format)
+    db.flush()
+    db.refresh(db_meeting)
+    return db_meeting
 
 
 @pytest.fixture
@@ -22,8 +82,23 @@ def snapshot_1(db: Session, root_server_1: RootServer) -> Snapshot:
 
 
 @pytest.fixture
-def service_body_1(db: Session, snapshot_1: Snapshot) -> ServiceBody:
+def snapshot_2(db: Session, root_server_1: RootServer, snapshot_1: Snapshot) -> Snapshot:
+    snapshot = crud.create_snapshot(db, root_server_1)
+    snapshot.created_at = snapshot_1.created_at + timedelta(hours=24)
+    db.add(snapshot)
+    db.flush()
+    db.refresh(snapshot)
+    return snapshot
+
+
+@pytest.fixture
+def sb_1_snap_1(db: Session, snapshot_1: Snapshot) -> ServiceBody:
     return crud.create_service_body(db, snapshot_1.id, 1, "sb name", "AS")
+
+
+@pytest.fixture
+def sb_1_snap_2(db: Session, snapshot_2: Snapshot) -> ServiceBody:
+    return crud.create_service_body(db, snapshot_2.id, 1, "sb name", "AS")
 
 
 @pytest.fixture
@@ -550,9 +625,9 @@ def test_parse_raw_meeting_published():
         BmltMeeting(**mock_meeting)
 
 
-def test_bmlt_meeting_to_db_bmlt_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_bmlt_id(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.id_bigint = 123
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -567,9 +642,9 @@ def test_bmlt_meeting_to_db_bmlt_id(db: Session, cache: SnapshotCache, service_b
         db.flush()
 
 
-def test_bmlt_meeting_to_db_name(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_name(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.meeting_name = "Living The Program"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -584,9 +659,9 @@ def test_bmlt_meeting_to_db_name(db: Session, cache: SnapshotCache, service_body
         db.flush()
 
 
-def test_bmlt_meeting_to_db_day(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_day(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.weekday_tinyint = 1
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -601,15 +676,15 @@ def test_bmlt_meeting_to_db_day(db: Session, cache: SnapshotCache, service_body_
         db.flush()
 
 
-def test_bmlt_meeting_to_db_service_body_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_service_body_id(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
     db.add(db_meeting)
     db.flush()
-    assert db_meeting.service_body_id == service_body_1.id
-    assert db_meeting.service_body == service_body_1
+    assert db_meeting.service_body_id == sb_1_snap_1.id
+    assert db_meeting.service_body == sb_1_snap_1
 
     with pytest.raises(ValueError):
         bmlt_meeting.service_body_bigint = None
@@ -618,9 +693,9 @@ def test_bmlt_meeting_to_db_service_body_id(db: Session, cache: SnapshotCache, s
         db.flush()
 
 
-def test_bmlt_meeting_to_db_start_time(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_start_time(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.start_time = time(hour=1, minute=30)
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -635,9 +710,9 @@ def test_bmlt_meeting_to_db_start_time(db: Session, cache: SnapshotCache, servic
         db.flush()
 
 
-def test_bmlt_meeting_to_db_duration(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_duration(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.duration_time = timedelta(hours=1)
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -652,9 +727,9 @@ def test_bmlt_meeting_to_db_duration(db: Session, cache: SnapshotCache, service_
         db.flush()
 
 
-def test_bmlt_meeting_to_db_venue_type(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_venue_type(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.venue_type = 1
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -681,9 +756,9 @@ def test_bmlt_meeting_to_db_venue_type(db: Session, cache: SnapshotCache, servic
     assert db_meeting.venue_type == VenueTypeEnum.NONE
 
 
-def test_bmlt_meeting_to_db_time_zone(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_time_zone(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.time_zone = "America/New_York"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -697,9 +772,9 @@ def test_bmlt_meeting_to_db_time_zone(db: Session, cache: SnapshotCache, service
     db.flush()
 
 
-def test_bmlt_meeting_to_db_longitude(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_longitude(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.longitude = Decimal("34.6840723")
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -713,9 +788,9 @@ def test_bmlt_meeting_to_db_longitude(db: Session, cache: SnapshotCache, service
     db.flush()
 
 
-def test_bmlt_meeting_to_db_latitude(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_latitude(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.latitude = Decimal("34.6840723")
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -729,9 +804,9 @@ def test_bmlt_meeting_to_db_latitude(db: Session, cache: SnapshotCache, service_
     db.flush()
 
 
-def test_bmlt_meeting_to_db_comments(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_comments(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.comments = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -745,9 +820,9 @@ def test_bmlt_meeting_to_db_comments(db: Session, cache: SnapshotCache, service_
     db.flush()
 
 
-def test_bmlt_meeting_to_db_virtual_meeting_additional_info(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_virtual_meeting_additional_info(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.virtual_meeting_additional_info = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -761,9 +836,9 @@ def test_bmlt_meeting_to_db_virtual_meeting_additional_info(db: Session, cache: 
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_city_subsection(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_city_subsection(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_city_subsection = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -777,9 +852,9 @@ def test_bmlt_meeting_to_db_location_city_subsection(db: Session, cache: Snapsho
     db.flush()
 
 
-def test_bmlt_meeting_to_db_virtual_meeting_link(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_virtual_meeting_link(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.virtual_meeting_link = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -793,9 +868,9 @@ def test_bmlt_meeting_to_db_virtual_meeting_link(db: Session, cache: SnapshotCac
     db.flush()
 
 
-def test_bmlt_meeting_to_db_phone_meeting_number(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_phone_meeting_number(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.phone_meeting_number = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -809,9 +884,9 @@ def test_bmlt_meeting_to_db_phone_meeting_number(db: Session, cache: SnapshotCac
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_nation(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_nation(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_nation = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -825,9 +900,9 @@ def test_bmlt_meeting_to_db_location_nation(db: Session, cache: SnapshotCache, s
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_postal_code_1(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_postal_code_1(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_postal_code_1 = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -841,9 +916,9 @@ def test_bmlt_meeting_to_db_location_postal_code_1(db: Session, cache: SnapshotC
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_province(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_province(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_province = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -857,9 +932,9 @@ def test_bmlt_meeting_to_db_location_province(db: Session, cache: SnapshotCache,
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_sub_province(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_sub_province(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_sub_province = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -873,9 +948,9 @@ def test_bmlt_meeting_to_db_location_sub_province(db: Session, cache: SnapshotCa
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_municipality(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_municipality(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_municipality = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -889,9 +964,9 @@ def test_bmlt_meeting_to_db_location_municipality(db: Session, cache: SnapshotCa
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_neighborhood(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_neighborhood(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_neighborhood = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -905,9 +980,9 @@ def test_bmlt_meeting_to_db_location_neighborhood(db: Session, cache: SnapshotCa
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_street(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_street(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_street = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -921,9 +996,9 @@ def test_bmlt_meeting_to_db_location_street(db: Session, cache: SnapshotCache, s
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_info(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_info(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_info = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -937,9 +1012,9 @@ def test_bmlt_meeting_to_db_location_info(db: Session, cache: SnapshotCache, ser
     db.flush()
 
 
-def test_bmlt_meeting_to_db_location_text(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_location_text(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.location_text = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -953,9 +1028,9 @@ def test_bmlt_meeting_to_db_location_text(db: Session, cache: SnapshotCache, ser
     db.flush()
 
 
-def test_bmlt_meeting_to_db_bus_lines(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_bus_lines(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.bus_lines = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -969,9 +1044,9 @@ def test_bmlt_meeting_to_db_bus_lines(db: Session, cache: SnapshotCache, service
     db.flush()
 
 
-def test_bmlt_meeting_to_db_train_lines(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_train_lines(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.train_lines = "a really cool string"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -985,9 +1060,9 @@ def test_bmlt_meeting_to_db_train_lines(db: Session, cache: SnapshotCache, servi
     db.flush()
 
 
-def test_bmlt_meeting_to_db_published(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_published(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.published = True
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -1008,9 +1083,9 @@ def test_bmlt_meeting_to_db_published(db: Session, cache: SnapshotCache, service
         db.flush()
 
 
-def test_bmlt_meeting_to_db_world_id(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_world_id(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
 
     bmlt_meeting.worldid_mixed = "G00013329"
     db_meeting, _ = bmlt_meeting.to_db(db, cache)
@@ -1024,9 +1099,9 @@ def test_bmlt_meeting_to_db_world_id(db: Session, cache: SnapshotCache, service_
     db.flush()
 
 
-def test_bmlt_meeting_to_db_meeting_formats(db: Session, cache: SnapshotCache, service_body_1: ServiceBody):
+def test_bmlt_meeting_to_db_meeting_formats(db: Session, cache: SnapshotCache, sb_1_snap_1: ServiceBody):
     bmlt_meeting = get_mock_bmlt_meeting()
-    bmlt_meeting.service_body_bigint = service_body_1.bmlt_id
+    bmlt_meeting.service_body_bigint = sb_1_snap_1.bmlt_id
     db_format_1 = crud.create_format(db, cache.snapshot.id, 1, "O")
     db_format_2 = crud.create_format(db, cache.snapshot.id, 2, "BEG")
 
@@ -1059,3 +1134,57 @@ def test_save_meetings(db: Session, snapshot_1: Snapshot):
     assert db_meeting.meeting_formats[0].format == db_format_1
     assert db_meeting.meeting_formats[1].meeting == db_meeting
     assert db_meeting.meeting_formats[1].format == db_format_2
+
+
+def test_update_meetings_last_changed_meeting_created(db: Session, snapshot_1: Snapshot, snapshot_2: Snapshot, sb_1_snap_1: ServiceBody, sb_1_snap_2: ServiceBody):
+    mtg_1_snap_2 = create_meeting(db, [], **get_meeting_kwargs(snapshot_2, sb_1_snap_2, 1))
+
+    update_meetings_last_changed(db, snapshot_2, snapshot_1)
+    db.refresh(mtg_1_snap_2)
+    assert mtg_1_snap_2.last_changed == snapshot_2.created_at
+
+
+def test_update_meetings_last_changed_meeting_updated(db: Session, snapshot_1: Snapshot, snapshot_2: Snapshot, sb_1_snap_1: ServiceBody, sb_1_snap_2: ServiceBody):
+    mtg_1_snap_1 = create_meeting(db, [], **get_meeting_kwargs(snapshot_1, sb_1_snap_1, 1))
+    mtg_1_snap_1.last_changed = datetime.utcnow()
+    db.add(mtg_1_snap_1)
+    db.flush()
+    db.refresh(mtg_1_snap_1)
+
+    mtg_1_snap_2 = create_meeting(db, [], **get_meeting_kwargs(snapshot_2, sb_1_snap_2, 1))
+    mtg_1_snap_2.name = "updated"
+    db.add(mtg_1_snap_2)
+    db.flush()
+    db.refresh(mtg_1_snap_2)
+
+    update_meetings_last_changed(db, snapshot_2, snapshot_1)
+    db.refresh(mtg_1_snap_2)
+    assert mtg_1_snap_2.last_changed == snapshot_2.created_at
+
+
+def test_update_meetings_last_changed_meeting_deleted(db: Session, snapshot_1: Snapshot, snapshot_2: Snapshot, sb_1_snap_1: ServiceBody, sb_1_snap_2: ServiceBody):
+    mtg_1_snap_1 = create_meeting(db, [], **get_meeting_kwargs(snapshot_1, sb_1_snap_1, 1))
+    mtg_1_snap_1.last_changed = datetime.utcnow()
+    db.add(mtg_1_snap_1)
+    db.flush()
+    db.refresh(mtg_1_snap_1)
+
+    # there is really nothing to assert here, we just make sure it does not crash
+    update_meetings_last_changed(db, snapshot_2, snapshot_1)
+
+
+def test_update_meetings_last_changed_meeting_no_change(db: Session, snapshot_1: Snapshot, snapshot_2: Snapshot, sb_1_snap_1: ServiceBody, sb_1_snap_2: ServiceBody):
+    mtg_1_snap_1 = create_meeting(db, [], **get_meeting_kwargs(snapshot_1, sb_1_snap_1, 1))
+    mtg_1_snap_1.last_changed = datetime.utcnow()
+    db.add(mtg_1_snap_1)
+    db.flush()
+    db.refresh(mtg_1_snap_1)
+
+    mtg_1_snap_2 = create_meeting(db, [], **get_meeting_kwargs(snapshot_2, sb_1_snap_2, 1))
+    db.add(mtg_1_snap_2)
+    db.flush()
+    db.refresh(mtg_1_snap_2)
+
+    update_meetings_last_changed(db, snapshot_2, snapshot_1)
+    db.refresh(mtg_1_snap_2)
+    assert mtg_1_snap_2.last_changed == mtg_1_snap_1.last_changed
