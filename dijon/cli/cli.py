@@ -8,6 +8,7 @@ import click
 import uvicorn
 
 from dijon import crud, database, snapshot
+from dijon.snapshot.create import update_meetings_last_changed
 
 
 @click.group()
@@ -40,6 +41,20 @@ def run_migrations():
     os.chdir(new_cwd)
     alembic.config.main(argv=["--raiseerr", "upgrade", "head"])
     os.chdir(old_cwd)
+
+
+@cli.command()
+def populate_meeting_last_changed():
+    logging.basicConfig(level=logging.INFO)
+    with database.db_context() as db:
+        for root_server in crud.get_root_servers(db):
+            snapshots = crud.get_snapshots(db, root_server.id)
+            for snap in snapshots:
+                print(f"root_server    {root_server.id}    snapshot    {snap.id}")
+                prev_snapshot = crud.get_previous_snapshot(db, snap.id)
+                if prev_snapshot:
+                    update_meetings_last_changed(db, snap, prev_snapshot)
+                    db.commit()
 
 
 @cli.command()

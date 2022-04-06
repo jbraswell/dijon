@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from dijon import crud, models
 from dijon.snapshot.cache import SnapshotCache
+from dijon.snapshot.diff import diff_snapshots, structs
 
 
 logger = logging.getLogger(__name__)
@@ -245,6 +246,10 @@ def create_snapshot(db: Session, root_server: models.RootServer):
     logger.info(f"saving {len(bmlt_meetings)} meetings...")
     save_meetings(db, snapshot, bmlt_meetings)
 
+    prev_snapshot = crud.get_previous_snapshot(db, snapshot.id)
+    if prev_snapshot:
+        update_meetings_last_changed(db, snapshot, prev_snapshot)
+
 
 def save_service_bodies(db: Session, snapshot: models.Snapshot, bmlt_service_bodies: list[BmltServiceBody]):
     for bmlt_sb in bmlt_service_bodies:
@@ -279,4 +284,23 @@ def save_meetings(db: Session, snapshot: models.Snapshot, bmlt_meetings: list[Bm
         db_meeting, db_meeting_formats = bmlt_meeting.to_db(db, cache)
         db.add(db_meeting)
         db.add_all(db_meeting_formats)
+    db.flush()
+
+
+def update_meetings_last_changed(db: Session, snapshot: models.Snapshot, prev_snapshot: models.Snapshot):
+    meetings_by_bmlt_id = {db_m.bmlt_id: db_m for db_m in crud.get_meetings_for_snapshot(db, snapshot.id)}
+    prev_meetings_by_bmlt_id = {db_m.bmlt_id: db_m for db_m in crud.get_meetings_for_snapshot(db, prev_snapshot.id)}
+
+    for event in diff_snapshots(db, prev_snapshot.id, snapshot.id):
+        if event.event_type != structs.MeetingEventType.MEETING_DELETED:
+            db_meeting = meetings_by_bmlt_id[event.new_meeting.bmlt_id]
+            db_meeting.last_changed = snapshot.created_at
+            db.add(db_meeting)
+
+    for db_meeting in (m for m in meetings_by_bmlt_id.values() if m.last_changed is None):
+        prev_db_meeting = prev_meetings_by_bmlt_id.get(db_meeting.bmlt_id)
+        if prev_db_meeting and prev_db_meeting.last_changed is not None:
+            db_meeting.last_changed = prev_db_meeting.last_changed
+            db.add(db_meeting)
+
     db.flush()

@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy import desc
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, subqueryload
 
 from dijon.models import (
     Format,
@@ -67,6 +67,17 @@ def get_snapshot_by_date(db: Session, root_server_id: int, date: date) -> Option
     query = db.query(Snapshot)
     query = query.filter(Snapshot.root_server_id == root_server_id)
     query = query.filter(Snapshot.created_at >= dt, Snapshot.created_at < dt + timedelta(days=1))
+    query = query.order_by(desc(Snapshot.created_at))
+    return query.first()
+
+
+def get_previous_snapshot(db: Session, snapshot_id: Snapshot) -> Optional[Snapshot]:
+    snapshot = get_snapshot_by_id(db, snapshot_id)
+    if not snapshot:
+        return None
+    query = db.query(Snapshot)
+    query = query.filter(Snapshot.root_server_id == snapshot.root_server_id)
+    query = query.filter(Snapshot.created_at < snapshot.created_at.date())
     query = query.order_by(desc(Snapshot.created_at))
     return query.first()
 
@@ -235,8 +246,8 @@ def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_i
     query = db.query(Meeting).filter(Meeting.snapshot_id == snapshot_id)
     if service_body_bmlt_ids is not None:
         query = query.join(ServiceBody).filter(ServiceBody.bmlt_id.in_(service_body_bmlt_ids))
-    query = query.options(selectinload(Meeting.meeting_formats).selectinload(MeetingFormat.format))
-    query = query.options(selectinload(Meeting.service_body).selectinload(ServiceBody.parent))
+    query = query.options(subqueryload(Meeting.meeting_formats).subqueryload(MeetingFormat.format))
+    query = query.options(subqueryload(Meeting.service_body).subqueryload(ServiceBody.parent))
     return query.all()
 
 

@@ -1,4 +1,4 @@
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -151,6 +151,7 @@ class Meeting(DiffableMeeting):
     naws_code_override: Optional[str]
     service_body: ServiceBody
     formats: list[Format]
+    last_changed: Optional[date]
 
     @classmethod
     def from_db_obj_list(cls, db_obj_list: list[models.Meeting], cache: NawsCodeCache) -> list["Meeting"]:
@@ -192,6 +193,7 @@ class Meeting(DiffableMeeting):
             naws_code_override=naws_code.code if naws_code else None,
             service_body=ServiceBody.from_db_obj(db_obj.service_body, cache) if db_obj.service_body else None,
             formats=[Format.from_db_obj(mf.format, cache) for mf in db_obj.meeting_formats],
+            last_changed=db_obj.last_changed.date() if db_obj.last_changed else None
         )
 
 
