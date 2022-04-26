@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from dijon import crud, models
 from dijon.snapshot import structs
 from dijon.snapshot.cache import NawsCodeCache
-from dijon.snapshot.diff import Data, diff_snapshots, get_child_service_body_bmlt_ids
+from dijon.snapshot.diff import Data, diff_snapshots
 
 
 def create_root_server(db: Session) -> models.RootServer:
@@ -529,19 +529,19 @@ def test_get_child_service_body_bmlt_ids(db: Session, snap_1: models.Snapshot):
     sb_1_2 = create_service_body(db, snap_1.id, 4, sb_1.id)
     sb_2 = create_service_body(db, snap_1.id, 5)
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
     assert len(child_bmlt_ids) == 4
     assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_1_1.bmlt_id, sb_1_1_1.bmlt_id, sb_1_2.bmlt_id])
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1.bmlt_id])
     assert len(child_bmlt_ids) == 2
     assert sorted(child_bmlt_ids) == sorted([sb_1_1.bmlt_id, sb_1_1_1.bmlt_id])
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1_1.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1_1_1.bmlt_id])
     assert len(child_bmlt_ids) == 1
     assert sorted(child_bmlt_ids) == sorted([sb_1_1_1.bmlt_id])
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
     assert len(child_bmlt_ids) == 1
     assert sorted(child_bmlt_ids) == sorted([sb_2.bmlt_id])
 
@@ -554,10 +554,10 @@ def test_get_child_service_body_bmlt_ids_circular(db: Session, snap_1: models.Sn
     db.flush()
     db.refresh(sb_1)
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_1.bmlt_id])
     assert len(child_bmlt_ids) == 2
     assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_2.bmlt_id])
 
-    child_bmlt_ids = get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
+    child_bmlt_ids = crud.get_child_service_body_bmlt_ids(db, snap_1.id, [sb_2.bmlt_id])
     assert len(child_bmlt_ids) == 2
     assert sorted(child_bmlt_ids) == sorted([sb_1.bmlt_id, sb_2.bmlt_id])

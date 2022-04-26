@@ -125,6 +125,16 @@ def get_service_bodies_for_snapshot(db: Session, snapshot_id: int) -> list[Servi
     return db.query(ServiceBody).filter(ServiceBody.snapshot_id == snapshot_id).all()
 
 
+def get_child_service_body_bmlt_ids(db: Session, snapshot_id: int, parent_bmlt_ids: list[int]) -> list[int]:
+    ret = list(parent_bmlt_ids)
+    all_service_bodies = get_service_bodies_for_snapshot(db, snapshot_id)
+    children = [sb for sb in all_service_bodies if sb.bmlt_id in parent_bmlt_ids]
+    while children:
+        children = [sb for sb in all_service_bodies if sb.parent in children and sb.bmlt_id not in ret]
+        ret.extend([c.bmlt_id for c in children])
+    return ret
+
+
 def get_service_body_naws_codes(db: Session, root_server_id: int = None) -> list[ServiceBodyNawsCode]:
     query = db.query(ServiceBodyNawsCode)
     if root_server_id is not None:
