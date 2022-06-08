@@ -125,12 +125,15 @@ class BmltMeeting(BaseModel):
     published: bool
 
     @classmethod
-    def from_url(cls, url: str) -> list["BmltMeeting"]:
+    def from_url(cls, url: str, bmlt_service_bodies: list[BmltServiceBody]) -> list["BmltMeeting"]:
+        valid_sb_ids = {sb.id for sb in bmlt_service_bodies}
         meetings = []
         url = urljoin(url, "client_interface/json/?switcher=GetSearchResults&advanced_published=0")
         for raw in get_json(url):
             try:
                 obj = cls(**raw)
+                if obj.service_body_bigint not in valid_sb_ids:
+                    continue
             except ValueError:
                 # TODO report this somewhere
                 continue
@@ -242,7 +245,7 @@ def create_snapshot(db: Session, root_server: models.RootServer):
     save_formats(db, snapshot, bmlt_formats)
 
     logger.info("getting meetings...")
-    bmlt_meetings = BmltMeeting.from_url(root_server.url)
+    bmlt_meetings = BmltMeeting.from_url(root_server.url, bmlt_service_bodies)
     logger.info(f"saving {len(bmlt_meetings)} meetings...")
     save_meetings(db, snapshot, bmlt_meetings)
 
