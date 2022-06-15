@@ -39,6 +39,22 @@ def delete_root_server(db: Session, root_server_id: int) -> bool:
     return num_rows != 0
 
 
+def update_root_server(
+    db: Session,
+    root_server_id: int,
+    name: Optional[str] = None,
+    url: Optional[str] = None
+) -> bool:
+    update = {}
+    if name is not None:
+        update["name"] = name
+    if url is not None:
+        update["url"] = url
+    num_rows = db.query(RootServer).filter(RootServer.id == root_server_id).update(update)
+    db.flush()
+    return num_rows != 0
+
+
 def get_root_server(db: Session, root_server_id: int) -> Optional[RootServer]:
     return db.query(RootServer).filter(RootServer.id == root_server_id).first()
 

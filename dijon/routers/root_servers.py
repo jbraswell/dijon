@@ -39,6 +39,15 @@ def create_root_server(root_server: schemas.RootServerCreate, ctx: Context = Dep
     return crud.create_root_server(ctx.db, root_server.name, root_server.url)
 
 
+@router.patch("/rootservers/{root_server_id}", status_code=HTTP_204_NO_CONTENT, response_class=Response)
+def update_root_server(root_server: schemas.RootServerUpdate, root_server_id: int, ctx: Context = Depends()):
+    if not ctx.is_authenticated:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED)
+
+    if not crud.update_root_server(ctx.db, root_server_id, root_server.name, root_server.url):
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND)
+
+
 @router.delete("/rootservers/{root_server_id}", status_code=HTTP_204_NO_CONTENT, response_class=Response)
 def delete_root_server(root_server_id: int, ctx: Context = Depends()):
     if not ctx.is_authenticated:

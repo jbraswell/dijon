@@ -69,3 +69,56 @@ def test_delete_root_server(ctx: Ctx, headers: dict[str, str]):
     assert response.status_code == 204
     response = ctx.client.delete(f"/rootservers/{rs_1.id}", headers=headers)
     assert response.status_code == 404
+
+
+def test_update_root_server_name(ctx: Ctx, headers: dict[str, str]):
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    payload = schemas.RootServerUpdate(name="blah")
+    response = ctx.client.patch(
+        f"/rootservers/{rs_1.id}",
+        json=payload.dict(),
+        headers=headers
+    )
+    assert response.status_code == 204
+    root_server = crud.get_root_server(ctx.db, rs_1.id)
+    assert root_server.name == payload.name
+
+
+def test_update_root_server_url(ctx: Ctx, headers: dict[str, str]):
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    payload = schemas.RootServerUpdate(url="https://2/main_server/")
+    response = ctx.client.patch(
+        f"/rootservers/{rs_1.id}",
+        json=payload.dict(),
+        headers=headers
+    )
+    assert response.status_code == 204
+    root_server = crud.get_root_server(ctx.db, rs_1.id)
+    assert root_server.url == payload.url
+
+
+def test_update_root_server_no_fields(ctx: Ctx, headers: dict[str, str]):
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    payload = schemas.RootServerUpdate()
+    response = ctx.client.patch(
+        f"/rootservers/{rs_1.id}",
+        json=payload.dict(),
+        headers=headers
+    )
+    assert response.status_code == 204
+    root_server = crud.get_root_server(ctx.db, rs_1.id)
+    assert root_server.name == rs_1.name
+    assert root_server.url == rs_1.url
+
+
+def test_update_root_server_not_found(ctx: Ctx, headers: dict[str, str]):
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    payload = schemas.RootServerUpdate(url="https://2/main_server/")
+    response = ctx.client.patch(
+        "/rootservers/2",
+        json=payload.dict(),
+        headers=headers
+    )
+    assert response.status_code == 404
+    root_server = crud.get_root_server(ctx.db, rs_1.id)
+    assert root_server.url == rs_1.url

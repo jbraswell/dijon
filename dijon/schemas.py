@@ -25,6 +25,11 @@ class RootServerCreate(RootServerBase):
     pass
 
 
+class RootServerUpdate(BaseModel):
+    name: Optional[constr(min_length=1, max_length=255)]
+    url: Optional[AnyHttpUrl]
+
+
 # User
 #
 #
