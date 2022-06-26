@@ -32,6 +32,30 @@ def test_create_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
     assert response.status_code == 409
 
 
+def test_upsert_meeting_naws_codes(ctx: Ctx, headers: dict[str, str]):
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    crud.create_meeting_naws_code(ctx.db, rs.id, 1, 'test1')
+    crud.create_meeting_naws_code(ctx.db, rs.id, 2, 'test2')
+    crud.create_meeting_naws_code(ctx.db, rs.id, 3, 'test3')
+    crud.create_meeting_naws_code(ctx.db, rs.id, 4, 'test4')
+    patch = [
+        schemas.NawsCodeCreate(bmlt_id=1, code='changed1'),
+        schemas.NawsCodeCreate(bmlt_id=2, code='changed2'),
+        schemas.NawsCodeCreate(bmlt_id=4, code=''),
+    ]
+    # unauthenticated access denied
+    response = ctx.client.patch(f"/rootservers/{rs.id}/meetings/nawscodes", json=[p.dict() for p in patch])
+    assert response.status_code == 401
+    # authenticated, good
+    response = ctx.client.patch(f"/rootservers/{rs.id}/meetings/nawscodes", json=[p.dict() for p in patch], headers=headers)
+    assert response.status_code == 204
+    db_naws_codes = crud.get_meeting_naws_codes(ctx.db, rs.id)
+    assert len(db_naws_codes) == 3
+    assert [nc for nc in db_naws_codes if nc.bmlt_id == 1][0].code == patch[0].code
+    assert [nc for nc in db_naws_codes if nc.bmlt_id == 2][0].code == patch[1].code
+    assert [nc for nc in db_naws_codes if nc.bmlt_id == 3][0].code == 'test3'
+
+
 def test_delete_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
     rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
     crud.create_meeting_naws_code(ctx.db, rs.id, 1, 'test')
