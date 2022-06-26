@@ -268,6 +268,14 @@ def get_meeting_naws_code_by_bmlt_id(db: Session, root_server_id: int, bmlt_id: 
     return query.first()
 
 
+def get_meeting_naws_codes_by_bmlt_ids(db: Session, root_server_id: int, bmlt_ids: list[int], with_for_update: bool = False) -> list[MeetingNawsCode]:
+    query = db.query(MeetingNawsCode)
+    query = query.filter(MeetingNawsCode.root_server_id == root_server_id, MeetingNawsCode.bmlt_id.in_(bmlt_ids))
+    if with_for_update:
+        query = query.with_for_update()
+    return query.all()
+
+
 def get_meetings_for_snapshot(db: Session, snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[Meeting]:
     query = db.query(Meeting).filter(Meeting.snapshot_id == snapshot_id)
     if service_body_bmlt_ids is not None:
@@ -288,8 +296,21 @@ def create_meeting_naws_code(db: Session, root_server_id: int, bmlt_id: int, cod
     return naws_code
 
 
+def update_meeting_naws_code(db: Session, root_server_id: int, bmlt_id: int, code: str):
+    update = {"code": code}
+    num_rows = db.query(MeetingNawsCode).filter(MeetingNawsCode.root_server_id == root_server_id).filter(MeetingNawsCode.bmlt_id == bmlt_id).update(update)
+    db.flush()
+    return num_rows != 0
+
+
 def delete_meeting_naws_code(db: Session, id: int) -> bool:
     num_rows = db.query(MeetingNawsCode).filter(MeetingNawsCode.id == id).delete()
+    db.flush()
+    return num_rows != 0
+
+
+def delete_meeting_naws_codes(db: Session, ids: list[int]) -> bool:
+    num_rows = db.query(MeetingNawsCode).filter(MeetingNawsCode.id.in_(ids)).delete()
     db.flush()
     return num_rows != 0
 
