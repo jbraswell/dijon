@@ -16,7 +16,7 @@ services:
       - GUNICORN_CMD_ARGS=--forwarded-allow-ips='*'
     labels:
       - traefik.enable=true
-      - traefik.http.routers.fastapi.rule=Host(`dijon.jrb.lol`, `dijon-api.bmlt.dev`)
+      - traefik.http.routers.fastapi.rule=Host(`dijon-api.bmlt.dev`)
       - traefik.http.routers.fastapi.tls=true
       - traefik.http.routers.fastapi.tls.certresolver=letsencrypt
     env_file:
