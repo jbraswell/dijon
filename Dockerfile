@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9-slim
+FROM bmltenabled/uvicorn-gunicorn-fastapi:python3.9-slim
 ENV MODULE_NAME="dijon.main"
 
 # required for bsdiff4 to pip install
