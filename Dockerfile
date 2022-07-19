@@ -1,4 +1,4 @@
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9-slim
+FROM ghcr.io/multi-py/python-gunicorn-uvicorn:py3.10-slim-LATEST
 ENV MODULE_NAME="dijon.main"
 
 # required for bsdiff4 to pip install
@@ -6,12 +6,9 @@ RUN apt-get update && apt-get install -y \
   gcc \
   && rm -rf /var/lib/apt/lists/*
 
-# this default main.py doesn't do anything, but i don't like it being there
-RUN rm /app/main.py
-
 # get latest pip and poetry. poetry generates a requirements.txt, pip installs the requirements.txt
 RUN pip install --upgrade pip
-RUN pip install poetry==1.1.8
+RUN pip install poetry==1.1.8 uvicorn[standard]==0.15.0 gunicorn==20.1.0 fastapi==0.68.1
 
 # this script runs automatically at start
 COPY ./prestart.sh /app/
