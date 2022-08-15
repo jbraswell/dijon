@@ -106,7 +106,7 @@ resource "oci_core_network_security_group_security_rule" "dijon_ingress_ssh_rule
   source_type               = "CIDR_BLOCK"
 
   tcp_options {
-    source_port_range {
+    destination_port_range {
       max = 22
       min = 22
     }
@@ -122,7 +122,7 @@ resource "oci_core_network_security_group_security_rule" "dijon_ingress_443_rule
   source_type               = "CIDR_BLOCK"
 
   tcp_options {
-    source_port_range {
+    destination_port_range {
       max = 443
       min = 443
     }
@@ -138,7 +138,7 @@ resource "oci_core_network_security_group_security_rule" "dijon_ingress_80_rule"
   source_type               = "CIDR_BLOCK"
 
   tcp_options {
-    source_port_range {
+    destination_port_range {
       max = 80
       min = 80
     }
@@ -149,15 +149,6 @@ resource "oci_core_security_list" "dijon" {
   compartment_id = data.oci_identity_compartment.default.id
   vcn_id         = oci_core_vcn.dijon.id
   display_name   = "dijon-${terraform.workspace}"
-  egress_security_rules {
-    protocol    = "all"
-    destination = "0.0.0.0/0"
-  }
-
-  ingress_security_rules {
-    protocol = "all"
-    source   = "0.0.0.0/0"
-  }
 }
 
 resource "oci_core_subnet" "dijon" {
