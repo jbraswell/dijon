@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -o xtrace
+set -e
+
+filename="$(date +'%Y-%m-%d').sql.gz"
+tmp_filename=/tmp/${filename}
+
+function cleanup() {
+  rm -f ${tmp_filename}
+}
+
+trap cleanup EXIT
+
+password="$(cat /opt/dijon/compose/mariadb.secret.env | grep MARIADB_PASSWORD | cut -d"=" -f2)"
+docker run -it --rm --network host mariadb mysqldump --host=0.0.0.0 --user=dijon --password=${password} dijon | gzip > ${tmp_filename}
+AWS_PROFILE=mvana aws s3 cp ${tmp_filename} s3://dijon-db-backups/${filename}
