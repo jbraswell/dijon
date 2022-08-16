@@ -2,15 +2,38 @@
 set -o xtrace
 set -e
 
-filename="$(date +'%Y-%m-%d').sql.gz"
-tmp_filename=/tmp/${filename}
+export OCI_CLI_AUTH=instance_principal
+bucket_name=dijon-backup
+filename=/tmp/"$(date +'%Y-%m-%d').sql.gz"
 
 function cleanup() {
-  rm -f ${tmp_filename}
+  rm -f ${filename}
+}
+
+mysqldump() {
+  local password="$(cat /opt/dijon/compose/mariadb.secret.env | grep MARIADB_PASSWORD | cut -d"=" -f2)"
+  docker run -it --rm --network host mariadb mysqldump --host=0.0.0.0 --user=dijon --password=${password} dijon | gzip > ${filename}
+}
+
+upload() {
+  oci os object put --bucket-name ${bucket_name} --file ${filename} --force
+}
+
+prune() {
+  local objects="$(oci os object list --bucket-name dijon-backup | jq -r '.[] | sort_by(".name") | reverse | .[].name')"
+  local i=0
+  echo "${objects}" | while read object; do
+    echo ${i}
+    if [[ "${i}" -gt 3 ]]; then
+      echo "deleting ${object}"
+      oci os object delete --bucket-name ${bucket_name} --object-name=${object} --force
+    fi
+    i=$((i+1))
+  done
 }
 
 trap cleanup EXIT
 
-password="$(cat /opt/dijon/compose/mariadb.secret.env | grep MARIADB_PASSWORD | cut -d"=" -f2)"
-docker run -it --rm --network host mariadb mysqldump --host=0.0.0.0 --user=dijon --password=${password} dijon | gzip > ${tmp_filename}
-AWS_PROFILE=mvana aws s3 cp ${tmp_filename} s3://dijon-db-backups/${filename}
+mysqldump
+upload
+prune
