@@ -29,11 +29,42 @@ resource "oci_core_instance" "dijon" {
   }
 }
 
+resource "oci_identity_dynamic_group" "backup" {
+  depends_on     = [oci_core_instance.dijon]
+  compartment_id = data.oci_identity_compartment.default.id
+  description    = "BackupDynGroup"
+  matching_rule  = join("", ["ANY { instance.id = '", oci_core_instance.dijon.id, "' }"])
+  name           = "BackupDynGroup-1"
+}
+
+resource "oci_identity_policy" "backup_policy" {
+  depends_on     = [oci_identity_dynamic_group.backup]
+  compartment_id = data.oci_identity_compartment.default.id
+  description    = "BackupPolicy"
+  name           = "BackupPolicy-1"
+  statements = [
+    "Allow dynamic-group ${oci_identity_dynamic_group.backup.name} to manage buckets in tenancy",
+    "Allow dynamic-group ${oci_identity_dynamic_group.backup.name} to manage objects in tenancy",
+    format("Allow service objectstorage-%s to manage object-family in tenancy", var.region)
+  ]
+}
+
+resource "oci_objectstorage_bucket" "bucket" {
+  compartment_id = data.oci_identity_compartment.default.id
+  name           = "dijon-backup"
+  namespace      = data.oci_objectstorage_namespace.dijon.namespace
+  access_type    = "NoPublicAccess"
+}
+
 resource "oci_core_public_ip" "dijon" {
   compartment_id = data.oci_identity_compartment.default.id
   display_name   = "dijon-${terraform.workspace}"
   lifetime       = "RESERVED"
   private_ip_id  = data.oci_core_private_ips.dijon.private_ips[0]["id"]
+}
+
+data "oci_objectstorage_namespace" "dijon" {
+  compartment_id = data.oci_identity_compartment.default.id
 }
 
 data "oci_core_vnic_attachments" "dijon" {
