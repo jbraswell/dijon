@@ -12,7 +12,7 @@ function cleanup() {
 
 mysqldump() {
   local password="$(cat /opt/dijon/compose/mariadb.secret.env | grep MARIADB_PASSWORD | cut -d"=" -f2)"
-  docker run -it --rm --network host mariadb mysqldump --host=0.0.0.0 --user=dijon --password=${password} dijon | gzip > ${filename}
+  docker run -i --rm --network host mariadb mysqldump --host=0.0.0.0 --user=dijon --password=${password} dijon | gzip > ${filename}
 }
 
 upload() {
