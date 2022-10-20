@@ -9,7 +9,7 @@ from dijon.snapshot.cache import NawsCodeCache
 
 
 class Data:
-    def __init__(self, old: list[models.Meeting], new: list[models.Meeting], naws_code_cache: NawsCodeCache):
+    def __init__(self, old: list[models.Meeting], new: list[models.Meeting], naws_code_cache: NawsCodeCache, exclude_world_id_updates: bool = False):
         self.old_db_meetings = old
         self.new_db_meetings = new
         self.old_db_meetings_by_id = {m.bmlt_id: m for m in self.old_db_meetings}
@@ -19,6 +19,7 @@ class Data:
         self.old_diff_meetings_by_id = {m.bmlt_id: m for m in self.old_diff_meetings}
         self.new_diff_meetings_by_id = {m.bmlt_id: m for m in self.new_diff_meetings}
         self.cache: NawsCodeCache = naws_code_cache
+        self.exclude_world_id_updates = exclude_world_id_updates
 
     def create_created_event(self, meeting: structs.Meeting) -> structs.MeetingEvent:
         return structs.MeetingEvent(
@@ -78,6 +79,9 @@ class Data:
                 new_diff_meeting = self.new_diff_meetings_by_id[diff_meeting.bmlt_id]
                 if diff_meeting != new_diff_meeting:
                     changed_fields = self.get_changed_fields(diff_meeting, new_diff_meeting)
+                    if self.exclude_world_id_updates:
+                        if len(changed_fields) == 1 and changed_fields[0] == "world_id":
+                            continue
                     db_meeting = self.old_db_meetings_by_id[diff_meeting.bmlt_id]
                     new_db_meeting = self.new_db_meetings_by_id[new_diff_meeting.bmlt_id]
                     meeting = structs.Meeting.from_db_obj(db_meeting, self.cache)
@@ -93,7 +97,7 @@ class Data:
         return events
 
 
-def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None) -> list[structs.MeetingEvent]:
+def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, service_body_bmlt_ids: Optional[list[int]] = None, exclude_world_id_updates: bool = False) -> list[structs.MeetingEvent]:
     snap = crud.get_snapshot_by_id(db, old_snapshot_id)
     cache = NawsCodeCache(db, snap.root_server)
     if service_body_bmlt_ids is not None:
@@ -105,5 +109,5 @@ def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, serv
         service_body_bmlt_ids = list(unique)
     old = crud.get_meetings_for_snapshot(db, old_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     new = crud.get_meetings_for_snapshot(db, new_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
-    data = Data(old, new, cache)
+    data = Data(old, new, cache, exclude_world_id_updates=True)
     return data.diff()

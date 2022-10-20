@@ -318,6 +318,17 @@ def test_diff_meeting_updated_published(db: Session, mtg_1_snap_1, mtg_1_snap_2:
     assert event.changed_fields == ["published"]
 
 
+def test_diff_meeting_updated_exclude_world_id_updates(db: Session, mtg_1_snap_1, mtg_1_snap_2: models.Meeting, cache):
+    mtg_1_snap_2.world_id = 'this is a change'
+    db.add(mtg_1_snap_2)
+    db.flush()
+    db.refresh(mtg_1_snap_2)
+
+    data = Data([mtg_1_snap_1], [mtg_1_snap_2], cache, exclude_world_id_updates=True)
+    events = data.diff()
+    assert len(events) == 0
+
+
 @pytest.mark.parametrize(
     "field_name",
     [

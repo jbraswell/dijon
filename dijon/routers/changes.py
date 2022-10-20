@@ -17,6 +17,7 @@ def list_meeting_changes(
     start_date: date,
     end_date: Optional[date] = None,
     service_body_bmlt_ids: Optional[list[int]] = Query(None),
+    exclude_world_id_updates: bool = Query(False),
     ctx: Context = Depends()
 ):
     if end_date is None:
@@ -39,4 +40,5 @@ def list_meeting_changes(
         start_date=start_snapshot.created_at.date(),
         end_date=end_snapshot.created_at.date(),
         events=events,
+        exclude_world_id_updates=exclude_world_id_updates
     )
