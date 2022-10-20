@@ -16,7 +16,7 @@ alembic = "^1.7.4"
 uvicorn = "^0.15.0"
 click = "^8.0.3"
 dynaconf = "^3.1.7"
-mysql-connector-python = "^8.0.27"
+mysql-connector-python = "8.0.27"
 requests = "^2.27.1"
 passlib = "^1.7.4"
 pydantic = {extras = ["email"], version = "^1.9.0"}
