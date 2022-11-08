@@ -34,11 +34,10 @@ def list_meeting_changes(
     if not end_snapshot:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"No snapshot found for {end_date}")
 
-    events = snapshot.diff(ctx.db, start_snapshot.id, end_snapshot.id, service_body_bmlt_ids)
+    events = snapshot.diff(ctx.db, start_snapshot.id, end_snapshot.id, service_body_bmlt_ids, exclude_world_id_updates=exclude_world_id_updates)
 
     return schemas.MeetingChangesResponse(
         start_date=start_snapshot.created_at.date(),
         end_date=end_snapshot.created_at.date(),
-        events=events,
-        exclude_world_id_updates=exclude_world_id_updates
+        events=events
     )
