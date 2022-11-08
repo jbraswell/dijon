@@ -109,5 +109,5 @@ def diff_snapshots(db: Session, old_snapshot_id: int, new_snapshot_id: int, serv
         service_body_bmlt_ids = list(unique)
     old = crud.get_meetings_for_snapshot(db, old_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
     new = crud.get_meetings_for_snapshot(db, new_snapshot_id, service_body_bmlt_ids=service_body_bmlt_ids)
-    data = Data(old, new, cache, exclude_world_id_updates=True)
+    data = Data(old, new, cache, exclude_world_id_updates=exclude_world_id_updates)
     return data.diff()
