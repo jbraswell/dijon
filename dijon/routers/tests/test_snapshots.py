@@ -5,8 +5,8 @@ from dijon.conftest import Ctx
 
 
 def test_list_snapshots(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 2", "https://2/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 2", "https://2/main_server/", True)
     crud.create_snapshot(ctx.db, rs_1)
     snap_2_rs_1 = crud.create_snapshot(ctx.db, rs_1)
     crud.create_snapshot(ctx.db, rs_2)
@@ -23,8 +23,8 @@ def test_list_snapshots(ctx: Ctx):
 
 
 def test_list_server_snapshots(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 2", "https://2/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 2", "https://2/main_server/", True)
 
     crud.create_snapshot(ctx.db, rs_1)
     crud.create_snapshot(ctx.db, rs_1)
@@ -41,7 +41,7 @@ def test_list_server_snapshots(ctx: Ctx):
 
 
 def test_get_server_snapshot(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_snapshot(ctx.db, rs_1)
     snap_2 = crud.create_snapshot(ctx.db, rs_1)
     snap_2.created_at = datetime.utcnow() + timedelta(weeks=1)

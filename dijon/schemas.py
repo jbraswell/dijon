@@ -12,6 +12,7 @@ from dijon.snapshot.diff import structs
 class RootServerBase(BaseModel):
     name: constr(min_length=1, max_length=255)
     url: AnyHttpUrl
+    is_enabled: bool
 
     class Config:
         orm_mode = True
@@ -28,6 +29,7 @@ class RootServerCreate(RootServerBase):
 class RootServerUpdate(BaseModel):
     name: Optional[constr(min_length=1, max_length=255)]
     url: Optional[AnyHttpUrl]
+    is_enabled: Optional[bool]
 
 
 # User

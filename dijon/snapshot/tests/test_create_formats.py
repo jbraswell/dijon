@@ -9,7 +9,7 @@ from dijon.snapshot.create import BmltFormat, save_formats
 
 @pytest.fixture
 def root_server_1(db: Session) -> RootServer:
-    return crud.create_root_server(db, "root name", "https://blah/main_server/")
+    return crud.create_root_server(db, "root name", "https://blah/main_server/", True)
 
 
 @pytest.fixture

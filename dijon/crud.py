@@ -25,8 +25,8 @@ from dijon.utils import password_util
 # root servers
 #
 #
-def create_root_server(db: Session, name: str, url: str) -> RootServer:
-    root_server = RootServer(name=name, url=url)
+def create_root_server(db: Session, name: str, url: str, is_enabled: bool) -> RootServer:
+    root_server = RootServer(name=name, url=url, is_enabled=is_enabled)
     db.add(root_server)
     db.flush()
     db.refresh(root_server)
@@ -43,13 +43,16 @@ def update_root_server(
     db: Session,
     root_server_id: int,
     name: Optional[str] = None,
-    url: Optional[str] = None
+    url: Optional[str] = None,
+    is_enabled: Optional[bool] = None,
 ) -> bool:
     update = {}
     if name is not None:
         update["name"] = name
     if url is not None:
         update["url"] = url
+    if is_enabled is not None:
+        update["is_enabled"] = is_enabled
     num_rows = db.query(RootServer).filter(RootServer.id == root_server_id).update(update)
     db.flush()
     return num_rows != 0
