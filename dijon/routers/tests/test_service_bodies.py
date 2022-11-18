@@ -5,8 +5,8 @@ from dijon.conftest import Ctx
 
 
 def test_list_snapshot_service_bodies(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     snap_1_rs_1 = crud.create_snapshot(ctx.db, rs_1)
     snap_1_rs_2 = crud.create_snapshot(ctx.db, rs_2)
     snap_2_rs_1 = crud.create_snapshot(ctx.db, rs_1)

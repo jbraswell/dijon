@@ -12,7 +12,7 @@ from dijon.snapshot.diff import Data, diff_snapshots
 
 
 def create_root_server(db: Session) -> models.RootServer:
-    return crud.create_root_server(db, "root name", "https://blah/main_server/")
+    return crud.create_root_server(db, "root name", "https://blah/main_server/", True)
 
 
 def create_snapshot(db: Session, root_server: models.RootServer) -> models.Snapshot:

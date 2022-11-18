@@ -15,7 +15,7 @@ def headers(db: Session, admin_access_token: str) -> dict[str, str]:
 #
 #
 def test_create_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     post = schemas.NawsCodeCreate(bmlt_id=1, code='test')
     # unauthenticated access denied
     response = ctx.client.post(f"/rootservers/{rs.id}/meetings/nawscodes", json=post.dict())
@@ -33,7 +33,7 @@ def test_create_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_upsert_meeting_naws_codes(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_meeting_naws_code(ctx.db, rs.id, 1, 'test1')
     crud.create_meeting_naws_code(ctx.db, rs.id, 2, 'test2')
     crud.create_meeting_naws_code(ctx.db, rs.id, 3, 'test3')
@@ -57,7 +57,7 @@ def test_upsert_meeting_naws_codes(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_delete_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_meeting_naws_code(ctx.db, rs.id, 1, 'test')
     # unauthenticated access denied
     response = ctx.client.delete(f"/rootservers/{rs.id}/meetings/nawscodes/1")
@@ -71,8 +71,8 @@ def test_delete_meeting_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_list_meeting_nawscodes(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_meeting_naws_code(ctx.db, rs_1.id, 1, "A")
     crud.create_meeting_naws_code(ctx.db, rs_2.id, 2, "B")
     response = ctx.client.get("/meetings/nawscodes")
@@ -85,7 +85,7 @@ def test_list_meeting_nawscodes(ctx: Ctx):
 
 
 def test_list_server_meeting_nawscodes(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_meeting_naws_code(ctx.db, rs.id, 1, "A")
     crud.create_meeting_naws_code(ctx.db, rs.id, 2, "B")
     response = ctx.client.get(f"/rootservers/{rs.id}/meetings/nawscodes")
@@ -98,7 +98,7 @@ def test_list_server_meeting_nawscodes(ctx: Ctx):
 
 
 def test_get_meeting_nawscode(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     code = crud.create_meeting_naws_code(ctx.db, rs.id, 1, "A")
     response = ctx.client.get(f"/rootservers/{rs.id}/meetings/nawscodes/1")
     data = response.json()
@@ -111,7 +111,7 @@ def test_get_meeting_nawscode(ctx: Ctx):
 #
 #
 def test_create_format_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     post = schemas.NawsCodeCreate(bmlt_id=1, code='test')
     # unauthenticated access denied
     response = ctx.client.post(f"/rootservers/{rs.id}/formats/nawscodes", json=post.dict())
@@ -129,7 +129,7 @@ def test_create_format_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_delete_format_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_format_naws_code(ctx.db, rs.id, 1, 'test')
     # unauthenticated access denied
     response = ctx.client.delete(f"/rootservers/{rs.id}/formats/nawscodes/1")
@@ -143,8 +143,8 @@ def test_delete_format_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_list_formats_nawscodes(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_format_naws_code(ctx.db, rs_1.id, 1, "A")
     crud.create_format_naws_code(ctx.db, rs_2.id, 2, "B")
     response = ctx.client.get("/formats/nawscodes")
@@ -157,7 +157,7 @@ def test_list_formats_nawscodes(ctx: Ctx):
 
 
 def test_list_server_format_nawscodes(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_format_naws_code(ctx.db, rs.id, 1, "A")
     crud.create_format_naws_code(ctx.db, rs.id, 2, "B")
     response = ctx.client.get(f"/rootservers/{rs.id}/formats/nawscodes")
@@ -170,7 +170,7 @@ def test_list_server_format_nawscodes(ctx: Ctx):
 
 
 def test_get_format_nawscode(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     code = crud.create_format_naws_code(ctx.db, rs.id, 1, "A")
     response = ctx.client.get(f"/rootservers/{rs.id}/formats/nawscodes/1")
     data = response.json()
@@ -183,7 +183,7 @@ def test_get_format_nawscode(ctx: Ctx):
 #
 #
 def test_create_service_body_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     post = schemas.NawsCodeCreate(bmlt_id=1, code='test')
     # unauthenticated access denied
     response = ctx.client.post(f"/rootservers/{rs.id}/servicebodies/nawscodes", json=post.dict())
@@ -201,7 +201,7 @@ def test_create_service_body_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_delete_service_body_naws_code(ctx: Ctx, headers: dict[str, str]):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_service_body_naws_code(ctx.db, rs.id, 1, 'test')
     # unauthenticated access denied
     response = ctx.client.delete(f"/rootservers/{rs.id}/servicebodies/nawscodes/1")
@@ -215,8 +215,8 @@ def test_delete_service_body_naws_code(ctx: Ctx, headers: dict[str, str]):
 
 
 def test_list_service_body_nawscodes(ctx: Ctx):
-    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
-    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs_1 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
+    rs_2 = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_service_body_naws_code(ctx.db, rs_1.id, 1, "A")
     crud.create_service_body_naws_code(ctx.db, rs_2.id, 2, "B")
     response = ctx.client.get("/servicebodies/nawscodes")
@@ -229,7 +229,7 @@ def test_list_service_body_nawscodes(ctx: Ctx):
 
 
 def test_list_server_service_body_nawscodes(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     crud.create_service_body_naws_code(ctx.db, rs.id, 1, "A")
     crud.create_service_body_naws_code(ctx.db, rs.id, 2, "B")
     response = ctx.client.get(f"/rootservers/{rs.id}/servicebodies/nawscodes")
@@ -242,7 +242,7 @@ def test_list_server_service_body_nawscodes(ctx: Ctx):
 
 
 def test_get_service_body_nawscode(ctx: Ctx):
-    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/")
+    rs = crud.create_root_server(ctx.db, "root 1", "https://1/main_server/", True)
     code = crud.create_service_body_naws_code(ctx.db, rs.id, 1, "A")
     response = ctx.client.get(f"/rootservers/{rs.id}/servicebodies/nawscodes/1")
     data = response.json()
